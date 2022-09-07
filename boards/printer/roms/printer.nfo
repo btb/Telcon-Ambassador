@@ -1,0 +1,132 @@
+file U2-80-C01.bin F800
+option 6800
+option noasc
+
+label 0000 counter
+label 0001 char_gen_ptr
+label 0002 char_gen_ptr_l
+label 0003 char_buffer_ptr
+label 0005 char_buffer
+label 0055 char_buffer_end
+label 0056 char_buffer_end1
+label 007F stack_top
+label 0080 head_data
+label 0081 head_control
+label 0082 port_data
+label 0083 port_control
+
+unused f800-f820
+
+label f821 char_gen
+comment f821 Character generator data. For each ASCII character N, from 21 to 5f,
+comment f821 the five columns of pixels are at f800+N, f83f+N, f87e+N, f8bd+N, f8fc+N
+data f821-f95a
+unused f95b-fbff
+
+lcomment fc06 set printer head and motor as outputs (PA0-PA7)
+bin fc07
+lcomment fc0a enable port A, enable irq for phototransistor (CA1)
+bin fc0b
+lcomment fc0e turn heads and motor off (HIGH)
+bin fc11
+bin fc13
+lcomment fc1f not sure - print 256 columns of solid pixels?
+lcomment fc37 set port high bit as output, rest as inputs
+bin fc38
+lcomment fc3b set PRCON (CB2) high, enable port B
+bin fc3c
+lcomment fc42 start by jumping into the buffer processing part of main loop
+
+comment fc45
+comment fc45 loop until phototransistor stops interrupting
+label fc45 wait_photo_clear
+lcomment fc4f check phototransistor interrupt
+lcomment fc52 check it twice...
+
+comment fc59
+label fc59 motor_on
+
+bin fc5a
+const fc5e-fc5f
+
+comment fc64
+label fc64 all_off
+bin fc65
+
+comment fc69
+comment fc69 count down from 00 to 00, 21 times...
+label fc69 delay_0x15ff
+dec fc6a
+
+comment fc75
+comment fc75 fill character buffer with spaces
+label fc75 clear_char_buffer
+
+comment fc83
+label fc83 print_buffered_characters
+lcomment fc8a get char from buffer
+lcomment fc94 prepare to print this character
+lcomment fc96 is char a space?
+
+comment fca4 toggle PRCON (CB2)
+label fca4 toggle_prcon
+bin fca5
+bin fca9
+
+comment fcad
+comment fcad recive characters from port, buffer them, process the buffer, repeat
+label fcad main_loop
+lcomment fcaf check port interrupt
+lcomment fcb4 get byte from port
+lcomment fcb6 invert it
+lcomment fcb7 lower seven bits only
+lcomment fcbb got ENQuiry?
+lcomment fcbf got some other control code?
+lcomment fcc3 store in character buffer
+label fccd process_buffer
+lcomment fccd set PRD7 high - tell main CPU we're busy?
+bin fcce
+lcomment fce5 clear PRD7 - tell main CPU we're ready to receive again?
+
+comment fcea
+comment fcea decrement from 224 to zero
+label fcea delay_0xe0
+dec fceb
+
+comment fcf0
+label fcf0 restart_main_loop
+
+comment fcf2
+comment fcf2 increment X register from 0 to ffff twice.
+label fcf2 delay_0x20000
+dec fcf3
+const fcf5-fcf6
+
+comment fcfe
+label fcfe print_character
+lcomment fd00 motor on, heads off
+bin fd01
+lcomment fd02 blank column
+lcomment fd04 blank column
+
+label fd18 print_column
+
+lcomment fd1a check phototransistor interrupt
+lcomment fd1b loop until we are lined up
+lcomment fd1d send pixels to heads
+dec fd20
+lcomment fd24 motor on, heads off
+bin fd25
+label fd2a do_rts
+
+label fd2b print_space
+comment fd2b
+comment fd2b
+bin fd2c
+lcomment fd2d loop 8 times
+dec fd2e
+lcomment fd30 return
+
+unused fd38-fff7
+
+cvec fff8-ffff
