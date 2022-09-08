@@ -1,0 +1,618 @@
+file U5-DT.bin F000
+file U6-DT.bin F800
+option 6800
+option noasc
+option noflex
+
+label 0027 stack_top
+lcomment 0027 top of stack
+
+label 07B0 last_line_ptr
+lcomment 07B0 address of start of last line of SCREEN
+
+label 07FF screen_max_ptr
+lcomment 07FF last address of SCREEN
+
+label 0028 duplexing_mode
+lcomment 0028 char: duplexing control byte. page=1, half=0, full=-1
+
+label 0029 receive_buffer_tail_ptr
+lcomment 0029 char \*: pointer to tail of receive buffer FIFO
+
+label 002B key_buffer_head_ptr
+lcomment 002B char \*: pointer to head of keyboard buffer FIFO
+
+label 002D cursor_position_ptr
+lcomment 002D word: cursor position
+
+label 002F serial_mode
+lcomment 002F char: control byte for setting USART serial mode
+
+label 0030 temp_char
+lcomment 0030 char: for temporarily saving character
+
+label 0032 baud_gen_ptr
+lcomment 0032 struct void \*: pointer to baud generator set address
+label 0033 baud_gen_ptr+1 * lower byte of pointer
+
+label 0034 current_row_end_ptr
+lcomment 0034 char \*: pointer to end of current row
+label 0035 current_row_end_ptr+1
+
+label 0036 baud_config_ptr
+lcomment 0036 struct baud \*: pointer to current baud config struct
+label 0038 parity_config_ptr
+lcomment 0038 struct parity \*: pointer to current parity config struct
+label 003A stop_bits_config_ptr
+lcomment 003A struct stop_bits \*: pointer to current stop bits config struct
+label 003C columns_config_ptr
+lcomment 003C struct columns \*: pointer to current columns config struct
+label 003E duplexing_config_ptr
+lcomment 003E struct duplexing \*: pointer to current duplexing config struct
+
+label 0040 break_mode_on
+lcomment 0040 char: are we putting USART into break mode
+
+label 0041 max_column_temp
+lcomment 0041 char: for temporarily saving max_column
+
+label 0042 read_buffer_head_ptr
+lcomment 0042 char \*: pointer to head of receive buffer FIFO
+
+label 0044 current_row
+lcomment 0044 char: current row
+
+label 0045 current_column
+lcomment 0045 char: current column
+
+label 0046 scroll_position
+lcomment 0046 char \*: current position during scroll operation
+
+label 0048 max_column
+lcomment 0048 char: highest column that can be displayed
+
+label 0049 key_buffer_tail_ptr
+lcomment 0049 char \*: pointer to tail of keyboard buffer FIFO
+
+lcomment 004B char \*: temp pointer
+lcomment 004F void \*: temp pointer
+
+label 0053 stack_ptr_save
+lcomment 0053 void \*: for temporarily saving the location of the stack pointer
+label 0055 last_char_ptr
+lcomment 0055 char \*: pointer to last non-space character in screen buffer
+lcomment 0057 word:
+label 0059 source_ptr
+lcomment 0059 char \*: source parameter for copy operations
+label 005B dest_ptr
+lcomment 005B char \*: destination parameter for copy operations
+lcomment 005D void \*: for temporarily storing pointer to current config item
+label 005F print_enabled
+lcomment 005F char: printing enabled. set by DC2, cleared by DC4
+label 0061 counter
+lcomment 0061 char: loop counter
+
+label 0062 tty_mode
+label 0063 tty_config_ptr
+lcomment 0063 struct tty \*: pointer to current tty config
+
+label 0065 transmit_off
+lcomment 0065 char: transmit suspension flag
+
+label 0066 receive_buffer_count
+lcomment 0066 short count of bytes in the receive buffer
+
+label 0068 xoff_count
+lcomment 0068 char: incremented if we send XOFF
+
+label 0069 misc_data
+lcomment 0069 char: data byte sent out to the speaker/ind4/ind5/ind6 port
+
+label 006C param1
+lcomment 006C char: first parameter in escape sequence
+label 006D param2
+lcomment 006D char: second parameter in escape sequence
+label 006E param3
+lcomment 006E char: third parameter in escape sequence
+label 006F param_ptr
+lcomment 006F char \*: pointer to next parameter in escape sequence
+label 0071 seq_process_ptr
+lcomment 0071 void \*: pointer to next routine to use to process escape sequences
+label 0073 seq_processing
+lcomment 0073 char: incremented when we're currently processing a received escape sequence
+
+label 0078 flow_control_mode
+lcomment 0078 char: flow control mode. 0==XON/XOFF
+
+label 0080 screen_buffer
+lcomment 0080 char[80x24]: the screen buffer
+
+label 0800 key_buffer
+lcomment 0800 char[34?]: keyboard buffer FIFO
+
+label 0823 tab_stop_array
+lcomment 0823 char[10]: tab stops
+label 082C tab_stop_array+9
+
+label 082E receive_buffer
+lcomment 082E char[768]: received data buffer
+
+label 0B30 line_buffer
+lcomment 0B30 char[80]: buffer for current(?) line
+
+comment 8000
+comment 8000 I/O addresses
+label 8000 baud_gen_base_addr
+lcomment 8000 void[16]: baud generator control
+label 8006 baud_gen_base_addr+6
+
+label B004 serial_data_addr
+lcomment B004 char: serial data
+label B005 serial_control_addr
+lcomment B005 char: serial control
+
+label B008 kbd_data_addr
+lcomment B008 char: keyboard data
+label B009 kbd_control_addr
+lcomment B009 char: keyboard control
+
+label B00A printer_data_addr
+lcomment B00A char: printer data
+label B00B printer_control_addr
+lcomment B00B char: printer control
+
+label B00C preset_data
+lcomment B00C char: P1 socket data
+label B00D preset_control
+lcomment B00D char: P1 socket control
+
+label B00E misc_port_data
+lcomment B00E char: speaker, ind4, ind5, ind6 data
+label B00F misc_port_control
+lcomment B00F char: speaker, ind4, ind5, ind6 control
+
+comment f000 RESET handler
+comment f000 set stack pointer to 0x27
+comment f003 clear registers
+comment f008 clear memory from 0 to mem_max  (0BFFh)
+comment f017 disable interrupts
+comment f018 enable interrupt on low-going KBINT, enable keyboard port
+bin f019
+comment f01d set misc port as outputs
+bin f01e
+comment f022 enable interrupt on high-going RXRDY, enable misc port
+bin f023
+comment f027 send misc_data out to speaker and IND4,5,6
+comment f02c set to 300 baud
+comment f02f simultaneously send 01111111 to printer data port, 00111100 to printer control port
+lcomment f02f printer high bit is input, rest are outputs
+lcomment f032 set PRCON high, enable printer port
+const f030-f031
+comment f035 fill line_buffer with spaces
+dec f036
+comment f047 enable presets port
+bin f048
+comment f04f set tty config from preset
+bin f053
+comment f05b set baud config from preset
+bin f05f
+comment f067 set stop bits config from preset
+bin f06b
+comment f073 set parity config from preset
+bin f077
+comment f086 set duplexing config from preset
+bin f07e
+bin f08a
+bin f091
+comment f099 set columns config to 80
+
+comment f0bb
+label f0bb main
+comment f0c4 check read buffer
+comment f0cd process read buffer
+comment f0d0 fold read buffer tail if necessary
+comment f0d8 update read buffer tail
+comment f01e if read buffer fullness is low, and we've sent XOFF, send XON
+comment f0ee if we've started handling an escape sequence, resume that
+comment f0f7 is this a printable character (space or above)
+comment f0fb handle non-printable characters
+comment f0fb carriage return
+comment f103 line feed
+comment f114 loop until printer high bit clear
+
+comment f16a
+label f16a handle_received_command_code
+
+comment f16d
+label f16d check_key_buffer
+
+comment f1ad
+label f1ad send_escape_sequence
+
+comment f1c8
+label f1c8 wait_to_xmit
+
+comment f1cd
+label f1cd send_serial_byte
+
+comment f1e7
+
+comment f222
+
+comment f22e
+
+comment f2bc
+
+comment f31e
+label F31E do_command_CLR
+
+comment f326
+comment f326 Control Function - Erase In Display
+label f326 cs_ED
+
+comment f32d
+comment f32d fill memory from 0080 to 07ff with spaces
+label f32d clear_screen
+
+comment f35d
+comment f35d X = "^[[1;1H" // cursor to 1,1
+label F35D do_command_HOM
+
+comment f36b X = "^[[1C" // cursor right
+label F36B do_command_RGT
+
+comment f383 X = "^[[1B" // cursor down
+label F383 do_command_DWN
+
+comment f39a X = "^[[1D" // cursor left
+label F39A do_command_LFT
+
+comment f3b1 X = "^[[1A" // cursor up
+label F3B1 do_command_UP
+
+comment f3c8
+comment f3c8 make X the current cursor position.
+comment f3c8 inverts the character if M007A is set to 80h
+label f3c8 invert_char
+
+comment f3d1
+comment f3d1 given a row and column, find the address in the screen buffer,
+comment f3d1 as well as the address of the end of the current row
+label f3d1 get_position
+comment f3d5 multiply row by 80
+comment f3e1 add column
+comment f3e3 add offset of screen_buffer
+
+comment f3fe
+label f3fe scroll_screen_sub
+
+comment f43a
+label f43a scroll_screen
+
+comment f44f
+comment f44f fill line with spaces
+label f44f blank_line
+dec f450
+
+comment f45a
+label f45a handle_command_code
+comment f461 use A to calculate offset into array at FCE6, jump to address found there
+
+comment f47d
+label F47D do_command_NOP
+
+comment f47e
+label F47E do_command_BRK
+dec f486
+
+comment f497
+label F497 do_command_RET
+
+comment f4b1
+label F4B1 do_command_BS
+
+comment f4c5
+label F4C5 do_command_BS2
+
+comment f4d8
+label F4D8 do_command_TX
+
+comment f564
+label F564 do_command_SM
+
+comment f5b4
+label f5b4 serial_init
+
+comment f604
+label f604 configure_baud
+
+comment f662
+label f662 configure_parity
+
+comment f6ad
+label f6ad configure_stop_bits
+
+comment f6f8
+label f6f8 configure_columns
+
+comment f745
+label f745 configure_duplexing
+
+comment f794
+label f794 configure_tty
+
+comment f7fa
+comment f7fa wait for navigation keypress.
+comment f7fa return in A,B:
+comment f7fa       RET:    0,0
+comment f7fa       DOWN:   1,1
+comment f7fa       LEFT:   0,-1
+comment f7fa       RIGHT:  0,-2
+comment f7fa       UP:     0,1
+label f7fa get_key
+comment f7fb loop while KBTAIL==KBHEAD
+comment f811 keep waiting if bit 7 not set
+comment f814 pressed return?
+comment f81b pressed down?
+comment f823 pressed left?
+comment f82b pressed right?
+comment f833 pressed up?
+comment f835 keep waiting for keypress
+
+comment f83b
+label F83B do_command_8D
+
+comment f949
+label F949 do_command_HT
+
+comment f97e
+label F97E do_command_99
+
+comment f998
+label F998 do_command_PRT
+
+comment fa14
+label fa14 print_character
+
+comment fa50
+label FA50 do_command_CR
+
+comment fa59
+label FA59 do_command_LF
+
+comment fa6b
+label FA6B do_command_DC2
+
+comment fa78
+label FA7B do_command_DC4
+
+comment fa99
+label FA99 do_command_PRX
+
+comment fa9f
+label FA9F do_command_97
+
+comment fa8
+label FAA8 do_command_BEL
+
+comment fb1
+label FAB1 do_command_98
+
+comment faeb
+label FAEB do_command_FC1
+
+comment faf3
+label FAF3 do_command_FC0
+
+data fb81-fba6
+comment fb81
+comment fb81 Array of control functions for plain escape codes (without "[")
+label fb81 escape_sequences
+cvec fb82
+cvec fb85
+comment fb88
+comment fb88 Array of control functions for CSI escape codes (with "[")
+label fb88 csi_escape_sequences
+cvec fb89
+cvec fb8c
+cvec fb8f
+cvec fb92
+cvec fb95
+cvec fb98
+cvec fb9b
+cvec fb9e
+cvec fba1
+cvec fba4
+
+comment fba7
+comment fba7 Control Function - Horizontal Tabulation Set
+label fba7 cs_HTS
+lcomment fbae tabs are full
+lcomment fbb3 no tab for column zero
+
+comment fbb7
+comment fbb7  Control Function - Next Line
+label fbb7 cs_NEL
+
+comment fbc2
+comment fbc2 Control Function - Cursor Up
+label fbc2 cs_CUU
+
+comment fbd8
+comment fbd8 Control Function - Cursor Down
+label fbd8 cs_CUD
+
+comment fbee
+comment fbee Control Function - Cursor Forward
+label fbee cs_CUF
+
+comment fc04
+comment fc04 Control Function - Cursor Backward
+label fc04 cs_CUB
+
+comment fc1a
+comment fc1a Control Function - Cursor Position (same as HVP – Horizontal and Vertical Position)
+label fc1a cs_CUP
+
+comment fc3e
+comment fc3e Control Function – Tabulation Clear
+label fc3e cs_TBC
+comment fc40 0 - clear tab at cursor
+comment fc42 3 - clear all tabs
+comment fc5b abort if tab not set
+comment fc5e is this tab at the current position?
+
+comment fc6b
+comment fc6b Control Function - Load LEDs (DEC Private)
+label fc6b cs_DECLL
+comment fc71 0 - all off
+dec fc74
+comment fc73 1 - "num lock" on
+comment fc77 2 - "caps lock" on
+dec fc78
+comment fc7b was this the last parameter?
+comment fc7d next parameter
+comment fc80 turn off bits for LED5 and LED6
+bin fc83
+comment fc84 save status and send to port
+bin fc8e
+bin fc94
+
+comment fc97
+comment fc97 Control Function - Set Lines Per Page (DEC Private)
+comment fc97 SLPP only takes one param, so probably wrong...?
+label fc97 cs_DECSLPP
+dec fc9e
+dec fca8
+dec fcb6
+
+comment fcbd
+comment fcbd copy line from screen to LNBUF
+label fcbd copy_screen_to_line_buffer
+comment fcc7 copy B chars from X to DEST 
+label fcc7 copy_line
+
+comment fcd9 
+comment fcd9 copy line from line_buffer to screen
+label fcd9 copy_line_buffer_to_screen
+dec fcdf
+
+comment fce6
+comment fce6 array of command addresses used by HNDCMD
+cvec fce6-fd1f
+
+comment fd20
+word fd20-fd27
+label fd20 key_buffer_max
+label fd22 receive_buffer_max
+label fd24 tab_array_end
+lcomment fd24 end of tab stop array
+label fd26 mem_max
+
+comment fd28
+word fd28-fd2d
+lcomment fd28 buffer threshold medium
+lcomment fd2a buffer threshold low
+lcomment fd2c buffer threshold high
+
+comment fd2e
+data fd2e-fe3a
+
+comment fd43
+label fd43 config_text
+
+comment fd82
+comment fd82 struct baud {
+comment fd82       char text[5];   // four characters, padded with leading spaces, null terminated
+comment fd82       char offset;    // offset into CFGTXT
+comment fd82       char value;     // bits to set on ABCD pins of MM5307 chip, in reverse order
+comment fd82 }
+label fd82 baud_110
+label fd89 baud_150
+label fd90 baud_300
+label fd97 baud_600
+label fd9e baud_1200
+label fda5 baud_2400
+label fdac baud_4800
+label fdb3 baud_9600
+label fdba baud_max
+dvec fdba
+
+comment fdbc
+comment fdbc struct parity {
+comment fdbc       char text[2];   // 1 character, null terminated
+comment fdbc       char offset;    // offset into CFGTXT
+comment fdbc       char value;     // bits for sending to the USART
+comment fdbc }
+lcomment fdbc even parity, 7 bits, 16xBRF
+label fdbc parity_even_7
+lcomment fdc0 odd parity, 7 bits, 16xBRF
+label fdc0 parity_odd_7
+lcomment fdc4 no parity, 8 bits, 16xBRF
+label fdc4 parity_none_8
+label fdc8 parity_max
+dvec fdc8
+
+comment fdca
+comment fdca struct stop_bits {
+comment fdca       char text[2];   // 1 character, null terminated
+comment fdca       char offset;    // offset into CFGTXT
+comment fdca       char value;     // bits for sending to the USART
+comment fdca }
+lcomment fdca 1 stop bit
+label fdca stop_bits_1
+lcomment fdce 2 stop bits
+label fdce stop_bits_2
+label fdd2 stop_bits_max
+dvec fdd2
+
+comment fdd4
+comment fdd4 struct columns {
+comment fdd4       char text[3];   // two characters, null terminated
+comment fdd4       char offset;    // offset into CFGTXT
+comment fdd4       char value;     // # of columns - 1
+comment fdd4 }
+label fdd4 columns_40
+label fdd9 columns_48
+label fdde columns_56
+label fde3 columns_64
+label fde8 columns_69
+label fded columns_72
+label fdf2 columns_80
+label fdf7 columns_max
+dvec fdf7
+
+comment fdf9
+comment fdf9 struct duplexing {
+comment fdf9       char text[4];   // three characters, null terminated
+comment fdf9       char offset;    // offset into CFGTXT
+comment fdf9       char value;     // 1,0,-1
+label fdf9 duplexing_page
+label fdff duplexing_half
+label fe05 duplexing_full
+label fe0b duplexing_max
+dvec fe0b
+
+comment fe0d
+comment fe0d struct tty {
+comment fe0d       char text[4];   // three characters, null terminated
+comment fe0d       char offset;    // offset into CFGTXT
+comment fe0d       char value;     // # 0 or 1
+comment fe0d }
+label fe0d tty_no
+label fe13 tty_yes
+label fe19 tty_max
+dvec fe19
+
+comment fe1b
+comment fe1b escape sequences. null-terminated string.
+label fe1b esc_seq_home
+label fe22 esc_seq_up
+label fe27 esc_seq_down
+label fe2c esc_seq_left
+label fe31 esc_seq_right
+label fe36 esc_seq_clear
+
+unused fe3b-fff7
+
+cvec FFF8-FFFF
