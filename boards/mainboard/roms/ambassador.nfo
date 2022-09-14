@@ -67,6 +67,7 @@ lcomment 0045 char: current column
 
 label 0046 scroll_position
 lcomment 0046 char \*: current position during scroll operation
+label 0047 scroll_position+1
 
 label 0048 max_column
 lcomment 0048 char: highest column that can be displayed
@@ -216,15 +217,30 @@ comment f01e if read buffer fullness is low, and we've sent XOFF, send XON
 comment f0ee if we've started handling an escape sequence, resume that
 comment f0f7 is this a printable character (space or above)
 comment f0fb handle non-printable characters
-comment f0fb carriage return
-comment f103 line feed
+lcomment f0fb CR - Carriage Return
+lcomment f0ff command_carriage_return
+lcomment f103 LF - Line Feed
 comment f114 loop until printer high bit clear
+lcomment f121 command_line_feed
+lcomment f128 BS - Backspace
+lcomment f12c command_backspace2
+lcomment f130 HT - Horizontal Tab
+lcomment f134 command_horizontal_tab
+lcomment f138 DC2 - Device Control Two
+lcomment f13c command_printer_enable
+lcomment f140 DC4 - Device Control Four
+lcomment f144 command_printer_disable
+lcomment f148 BEL - Bell, Alert
+lcomment f14c command_bell
+lcomment f150 ESC - Escape
 
 comment f16a
 label f16a handle_received_command_code
 
 comment f16d
 label f16d check_key_buffer
+lcomment f189 BEL - Bell, Alert
+lcomment f1a0 LF - Line Feed
 
 comment f1ad
 label f1ad send_escape_sequence
@@ -236,15 +252,64 @@ comment f1cd
 label f1cd send_serial_byte
 
 comment f1e7
+dec f21c
 
 comment f222
+dec f225
 
 comment f22e
 
+comment f235
+lcomment f240 RxRDY
+bin f241
+
+comment f245
+label f245 handle_receive_ready
+lcomment f245 Sync Detect/Break Detect, Framing Error, Overrun Error
+bin f246
+lcomment f249 RTS, error reset, Rx enable, DTR, Tx enable
+bin f24a
+lcomment f24e chomp invalid byte
+lcomment f251 "?"
+label f255 handle_received_valid_byte
+lcomment f258 strip high bit
+lcomment f25a DC1 - XON
+lcomment f25e DC3 - XOFF
+
+comment f26a
+label f26a handle_received_character
+
+comment f287
+label f287 handle_keyboard_interrupt
+lcomment f28a command_nop
+
+comment f29e
+label f29e handle_received_xoff
+dec f2a4
+
+comment f2a8
+label f2a8 handle_received_xon
+
+comment f2ac
+label f2ac send_xoff
+lcomment f2ac DC3 - XOFF
+
+comment f2b4
+label f2b4 send_xon
+lcomment f2b5 DC1 - XON
+
+
 comment f2bc
+label f2bc soft_reset
+lcomment f2f5 RTS, error reset, Rx enable, DTR, Tx enable
+bin f2f6
+
+comment f307
+label f307 screen_strip_hibits
 
 comment f31e
-label F31E do_command_CLR
+comment f31e CTRL+CLEAR SCRN key pressed
+label F31E do_command_clear
 
 comment f326
 comment f326 Control Function - Erase In Display
@@ -255,20 +320,33 @@ comment f32d fill memory from 0080 to 07ff with spaces
 label f32d clear_screen
 
 comment f35d
-comment f35d X = "^[[1;1H" // cursor to 1,1
-label F35D do_command_HOM
+comment f35d HOME key pressed
+label F35D do_command_home
+label f363 move_home
 
-comment f36b X = "^[[1C" // cursor right
-label F36B do_command_RGT
+comment f36b
+comment f36b RIGHT key pressed
+label F36B do_command_right
+comment f371 CUF received
+label f371 do_cursor_forward
 
-comment f383 X = "^[[1B" // cursor down
-label F383 do_command_DWN
+comment f383
+comment f383 DOWN key pressed
+label F383 do_command_down
+comment f389 CUD received
+label f389 do_cursor_down
 
-comment f39a X = "^[[1D" // cursor left
-label F39A do_command_LFT
+comment f39a
+comment f39a LEFT key pressed
+label F39A do_command_left
+comment f3a0 CUB received
+label f3a0 do_cursor_backward
 
-comment f3b1 X = "^[[1A" // cursor up
-label F3B1 do_command_UP
+comment f3b1
+comment f3b1 UP key pressed
+label F3B1 do_command_up
+comment f4c5 CUU received
+label f3b7 do_cursor_up
 
 comment f3c8
 comment f3c8 make X the current cursor position.
@@ -299,29 +377,48 @@ label f45a handle_command_code
 comment f461 use A to calculate offset into array at FCE6, jump to address found there
 
 comment f47d
-label F47D do_command_NOP
+comment f47d SHIFT+CTRL+D key pressed
+comment f47d CTRL+: key pressed
+label F47D do_command_nop
 
 comment f47e
-label F47E do_command_BRK
+comment f47e BREAK key pressed
+label F47E do_command_break
 dec f486
+lcomment f48b RTS, error reset, Rx enable, DTR, Tx enable
+bin f48c
 
 comment f497
-label F497 do_command_RET
+comment f497 RETURN key pressed
+label F497 do_command_return
 
 comment f4b1
-label F4B1 do_command_BS
+comment f4b1 BACK SPACE key pressed
+label F4B1 do_command_backspace
 
 comment f4c5
-label F4C5 do_command_BS2
+comment f4c5 BS received
+label F4C5 do_command_backspace2
 
 comment f4d8
-label F4D8 do_command_TX
+comment f4d8 PRINT XMIT key pressed
+label F4D8 do_command_transmit
+
+comment f51f
+label f51f transmit_CR_LF
+
+comment f546
+label f546 screen_find_last_char
 
 comment f564
-label F564 do_command_SM
+comment f564 SET MODE key pressed
+label F564 do_command_set_mode
+const f561
 
 comment f5b4
 label f5b4 serial_init
+lcomment f5f8 RTS, error reset, Rx enable, DTR, Tx enable
+bin f5f9
 
 comment f604
 label f604 configure_baud
@@ -360,49 +457,82 @@ comment f833 pressed up?
 comment f835 keep waiting for keypress
 
 comment f83b
+comment f83b CTRL+ESC key pressed
 label F83B do_command_8D
 
+comment f8fd
+label f8fd add_tab_stop
+
+comment f932
+label f932 delete_tab_stop
+
 comment f949
-label F949 do_command_HT
+label F949 do_command_horizontal_tab
 
 comment f97e
+comment f97e CTRL+I key pressed
 label F97E do_command_99
 
 comment f998
-label F998 do_command_PRT
+comment f998 SHIFT+PRINT XMIT key pressed
+label F998 do_command_print
 
 comment fa14
 label fa14 print_character
 
 comment fa50
-label FA50 do_command_CR
+comment fa50 CR received
+label FA50 do_command_carriage_return
 
 comment fa59
-label FA59 do_command_LF
+comment fa59 LF received
+label FA59 do_command_line_feed
 
 comment fa6b
-label FA6B do_command_DC2
+comment fa6b DC2 received
+comment fa6b CTRL+1 key pressed
+label FA6B do_command_printer_enable
 
-comment fa78
-label FA7B do_command_DC4
+comment fa7b
+comment fa7b DC4 received
+comment fa7b CTRL+2 key pressed
+label FA7B do_command_printer_disable
+
+comment fa8b
+comment fa8b send 3 NULL characters to printer
+label fa8b print_nulls
 
 comment fa99
-label FA99 do_command_PRX
+comment fa99 CTRL+PRINT XMIT key pressed
+label FA99 do_command_print_transmit
 
 comment fa9f
+comment fa9f CTRL+3 key pressed
 label FA9F do_command_97
 
-comment fa8
-label FAA8 do_command_BEL
+comment faa8
+comment faa8 BEL received
+label FAA8 do_command_bell
 
-comment fb1
+comment fab1
+comment fab1 CTRL+4 key pressed
 label FAB1 do_command_98
 
+comment fabf
+
 comment faeb
-label FAEB do_command_FC1
+comment faeb CTRL+5 key pressed
+label FAEB do_command_flow_control_enable
 
 comment faf3
-label FAF3 do_command_FC0
+comment CTRL+6 key pressed
+label FAF3 do_command_flow_control_disable
+
+comment fafb
+label fafb handle_received_escape_sequence
+lcomment fb12 received a second escape?
+lcomment fb24 received CAN - Cancel sequence
+lcomment fb28 received "[" - Control Sequence Indicator
 
 data fb81-fba6
 comment fb81
@@ -498,8 +628,38 @@ label fcd9 copy_line_buffer_to_screen
 dec fcdf
 
 comment fce6
-comment fce6 array of command addresses used by HNDCMD
+comment fce6 Array of command addresses used by handle_command_code (and handle_received_command_code).
+comment fce6 Command codes begin at 0x80 and are generated by the keyboard or a received command.
 cvec fce6-fd1f
+lcomment fce6 0x80
+lcomment fce8 0x81
+lcomment fcea 0x82
+lcomment fcec 0x83
+lcomment fcee 0x84
+lcomment fcf0 0x85
+lcomment fcf2 0x86
+lcomment fcf4 0x87
+lcomment fcf6 0x88
+lcomment fcf8 0x89
+lcomment fcfa 0x8a
+lcomment fcfc 0x8b
+lcomment fcfe 0x8c
+lcomment fd00 0x8d
+lcomment fd02 0x8e
+lcomment fd04 0x8f
+lcomment fd06 0x90
+lcomment fd08 0x91
+lcomment fd0a 0x92
+lcomment fd0c 0x93
+lcomment fd0e 0x94
+lcomment fd10 0x95
+lcomment fd12 0x96
+lcomment fd14 0x97
+lcomment fd16 0x98
+lcomment fd18 0x99
+lcomment fd1a 0x9a
+lcomment fd1c 0x9b
+lcomment fd1e 0x9c
 
 comment fd20
 word fd20-fd27
@@ -511,9 +671,9 @@ label fd26 mem_max
 
 comment fd28
 word fd28-fd2d
-lcomment fd28 buffer threshold medium
-lcomment fd2a buffer threshold low
-lcomment fd2c buffer threshold high
+label fd28 receive_buffer_fill_medium
+label fd2a receive_buffer_fill_low
+label fd2c receive_buffer_fill_high
 
 comment fd2e
 data fd2e-fe3a
