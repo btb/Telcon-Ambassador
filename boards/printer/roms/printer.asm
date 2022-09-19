@@ -22,7 +22,15 @@ port_control EQU     $0083
 ;* Program Code / Data Areas                        *
 ;****************************************************
 
-        ORG     $F821
+        ORG     $F800
+
+; unused space
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F800: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F806: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F80C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F812: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F818: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF              ;F81E: FF FF FF 
 
 ; Character generator data. For each ASCII character N, from 21 to 5f,
 ; the five columns of pixels are at f800+N, f83f+N, f87e+N, f8bd+N, f8fc+N
@@ -139,9 +147,122 @@ char_gen FCB     $7F,$7F                  ;F821: 7F 7F
         FCB     $7F                      ;F957: 7F 
         FCC     "|"                      ;F958: 7C 
         FCB     $7F                      ;F959: 7F 
-        FCC     "{"                      ;F95A: 7B 
+        FCC     "{w"                     ;F95A: 7B 77 
 
-        ORG     $FC00 
+; unused space
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F95C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F962: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F968: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F96E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F974: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F97A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F980: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F986: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F98C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F992: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F998: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F99E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9A4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9AA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9B0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9B6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9BC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9C2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9C8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9CE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9D4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9DA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9E0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9E6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9EC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9F2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9F8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F9FE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA04: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA0A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA10: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA16: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA1C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA22: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA28: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA2E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA34: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA3A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA40: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA46: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA4C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA52: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA58: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA5E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA64: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA6A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA70: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA76: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA7C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA82: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA88: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA8E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA94: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FA9A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAA0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAA6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAAC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAB2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAB8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FABE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAC4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FACA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAD0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAD6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FADC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAE2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAE8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAEE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAF4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FAFA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB00: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB06: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB0C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB12: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB18: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB1E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB24: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB2A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB30: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB36: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB3C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB42: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB48: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB4E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB54: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB5A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB60: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB66: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB6C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB72: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB78: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB7E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB84: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB8A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB90: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB96: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FB9C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBA2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBA8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBAE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBB4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBBA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBC0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBC6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBCC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBD2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBD8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBDE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBE4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBEA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBF0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FBF6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF          ;FBFC: FF FF FF FF 
 
 hdlr_RST LDS     #stack_top               ;FC00: 8E 00 7F 
         CLR     >counter                 ;FC03: 7F 00 00 
@@ -314,7 +435,6 @@ ZFD21   DECB                             ;FD21: 5A
         LDAB    head_data                ;FD28: D6 80 
 do_rts  RTS                              ;FD2A: 39 
 
-
 print_space LDAA    #%01111111               ;FD2B: 86 7F 
         LDAB    #8                       ;FD2D: C6 08          loop 8 times
 ZFD2F   DECB                             ;FD2F: 5A 
@@ -324,7 +444,125 @@ ZFD2F   DECB                             ;FD2F: 5A
         PULB                             ;FD35: 33 
         BRA     ZFD2F                    ;FD36: 20 F7 
 
-        ORG     $FFF8 
+; unused space
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD38: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD3E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD44: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD4A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD50: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD56: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD5C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD62: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD68: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD6E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD74: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD7A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD80: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD86: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD8C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD92: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD98: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FD9E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDA4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDAA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDB0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDB6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDBC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDC2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDC8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDCE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDD4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDDA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDE0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDE6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDEC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDF2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDF8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FDFE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE04: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE0A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE10: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE16: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE1C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE22: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE28: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE2E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE34: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE3A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE40: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE46: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE4C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE52: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE58: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE5E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE64: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE6A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE70: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE76: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE7C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE82: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE88: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE8E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE94: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FE9A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEA0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEA6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEAC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEB2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEB8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEBE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEC4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FECA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FED0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FED6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEDC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEE2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEE8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEEE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEF4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FEFA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF00: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF06: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF0C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF12: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF18: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF1E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF24: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF2A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF30: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF36: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF3C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF42: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF48: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF4E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF54: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF5A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF60: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF66: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF6C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF72: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF78: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF7E: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF84: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF8A: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF90: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF96: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FF9C: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFA2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFA8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFAE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFB4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFBA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFC0: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFC6: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFCC: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFD2: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFD8: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFDE: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFE4: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFEA: FF FF FF FF FF FF 
+        FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;FFF0: FF FF FF FF FF FF 
+        FCB     $FF,$FF                  ;FFF6: FF FF 
 
 svec_IRQ FDB     hdlr_RST                 ;FFF8: FC 00 
 svec_SWI FDB     hdlr_RST                 ;FFFA: FC 00 

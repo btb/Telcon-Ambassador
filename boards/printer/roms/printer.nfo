@@ -15,14 +15,20 @@ label 0081 head_control
 label 0082 port_data
 label 0083 port_control
 
-unused f800-f820
+comment f800 unused space
+data f800-f820
 
+comment f821
 label f821 char_gen
 comment f821 Character generator data. For each ASCII character N, from 21 to 5f,
 comment f821 the five columns of pixels are at f800+N, f83f+N, f87e+N, f8bd+N, f8fc+N
-data f821-f95a
-unused f95b-fbff
+data f821-f95b
 
+comment f95c
+comment f95c unused space
+data f95c-fbff
+
+comment fc00
 lcomment fc06 set printer head and motor as outputs (PA0-PA7)
 bin fc07
 lcomment fc0a enable port A, enable irq for phototransistor (CA1)
@@ -121,12 +127,14 @@ label fd2a do_rts
 
 label fd2b print_space
 comment fd2b
-comment fd2b
 bin fd2c
 lcomment fd2d loop 8 times
 dec fd2e
 lcomment fd30 return
 
-unused fd38-fff7
+comment fd38
+comment fd38 unused space
+data fd38-fff7
 
+comment fff8
 cvec fff8-ffff

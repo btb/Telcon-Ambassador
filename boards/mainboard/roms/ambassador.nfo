@@ -191,6 +191,7 @@ lcomment f032 set PRCON high, enable printer port
 const f030-f031
 comment f035 fill line_buffer with spaces
 dec f036
+lcomment f037 SP - Space
 comment f047 enable presets port
 bin f048
 comment f04f set tty config from preset
@@ -246,12 +247,15 @@ comment f1ad
 label f1ad send_escape_sequence
 
 comment f1c8
-label f1c8 wait_to_xmit
+label f1c8 transmit_character
 
 comment f1cd
 label f1cd send_serial_byte
 
 comment f1e7
+label f1e7 add_character_to_screen
+comment f1ec if alphabetic, make uppercase
+lcomment f1fb SP - Space
 dec f21c
 
 comment f222
@@ -314,10 +318,14 @@ label F31E do_command_clear
 comment f326
 comment f326 Control Function - Erase In Display
 label f326 cs_ED
+dec f329
 
 comment f32d
 comment f32d fill memory from 0080 to 07ff with spaces
 label f32d clear_screen
+dec f32f
+lcomment f338 SP - Space
+dec f351
 
 comment f35d
 comment f35d HOME key pressed
@@ -351,7 +359,7 @@ label f3b7 do_cursor_up
 comment f3c8
 comment f3c8 make X the current cursor position.
 comment f3c8 inverts the character if M007A is set to 80h
-label f3c8 invert_char
+label f3c8 blink_cursor
 
 comment f3d1
 comment f3d1 given a row and column, find the address in the screen buffer,
@@ -366,11 +374,14 @@ label f3fe scroll_screen_sub
 
 comment f43a
 label f43a scroll_screen
+dec f43b
+dec f446
 
 comment f44f
 comment f44f fill line with spaces
 label f44f blank_line
 dec f450
+lcomment f451 SP - Space
 
 comment f45a
 label f45a handle_command_code
@@ -387,10 +398,13 @@ label F47E do_command_break
 dec f486
 lcomment f48b RTS, error reset, Rx enable, DTR, Tx enable
 bin f48c
+lcomment f491 RTS, error reset, send break character, Rx enable, DTR, Tx enable
+bin f492
 
 comment f497
 comment f497 RETURN key pressed
 label F497 do_command_return
+lcomment f49c CR - Carriage Return
 
 comment f4b1
 comment f4b1 BACK SPACE key pressed
@@ -443,22 +457,29 @@ comment f7fa wait for navigation keypress.
 comment f7fa return in A,B:
 comment f7fa       RET:    0,0
 comment f7fa       DOWN:   1,1
-comment f7fa       LEFT:   0,-1
-comment f7fa       RIGHT:  0,-2
+comment f7fa       LEFT:   0,-1(255)
+comment f7fa       RIGHT:  0,-2(254)
 comment f7fa       UP:     0,1
 label f7fa get_key
 comment f7fb loop while KBTAIL==KBHEAD
 comment f811 keep waiting if bit 7 not set
-comment f814 pressed return?
-comment f81b pressed down?
-comment f823 pressed left?
-comment f82b pressed right?
-comment f833 pressed up?
-comment f835 keep waiting for keypress
+lcomment f814 got command_return?
+lcomment f81b got command_down?
+dec f820
+lcomment f823 got command_left?
+dec f828
+lcomment f82b got command_right?
+dec f830
+lcomment f833 got command_up?
+lcomment f835 keep waiting for keypress
+dec f838
 
 comment f83b
 comment f83b CTRL+ESC key pressed
 label F83B do_command_8D
+dec f841
+dec f84b
+dec f8d5
 
 comment f8fd
 label f8fd add_tab_stop
@@ -513,6 +534,7 @@ label FA9F do_command_97
 comment faa8
 comment faa8 BEL received
 label FAA8 do_command_bell
+lcomment faa8 BEL - Bell, Alert
 
 comment fab1
 comment fab1 CTRL+4 key pressed
@@ -773,6 +795,9 @@ label fe2c esc_seq_left
 label fe31 esc_seq_right
 label fe36 esc_seq_clear
 
-unused fe3b-fff7
+comment fe3b
+comment fe3b unused space
+data fe3b-fff7
 
+comment fff8
 cvec FFF8-FFFF
