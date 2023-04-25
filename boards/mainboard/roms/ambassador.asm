@@ -1,4 +1,4 @@
-; f9dasm: M6800/1/2/3/8/9 / H6309 Binary/OS9/FLEX9 Disassembler V1.80
+; f9dasm: M6800/1/2/3/8/9 / H6309 Binary/OS9/FLEX9 Disassembler V1.82
 ; Loaded binary file U5-DT.bin
 ; Loaded binary file U6-DT.bin
 
@@ -869,12 +869,12 @@ do_command_set_mode SEI                              ;F564: 0F
         LDX     tty_config_ptr           ;F59B: DE 63 
         LDAB    $04,X                    ;F59D: E6 04 
         JSR     ZF655                    ;F59F: BD F6 55 
-ZF5A2   JMP     configure_baud           ;F5A2: 7E F6 04 
-ZF5A5   JMP     configure_parity         ;F5A5: 7E F6 62 
-ZF5A8   JMP     configure_stop_bits      ;F5A8: 7E F6 AD 
-ZF5AB   JMP     configure_columns        ;F5AB: 7E F6 F8 
-ZF5AE   JMP     configure_duplexing      ;F5AE: 7E F7 45 
-ZF5B1   JMP     configure_tty            ;F5B1: 7E F7 94 
+jmp_configure_baud JMP     configure_baud           ;F5A2: 7E F6 04 
+jmp_configure_parity JMP     configure_parity         ;F5A5: 7E F6 62 
+jmp_configure_stop_bits JMP     configure_stop_bits      ;F5A8: 7E F6 AD 
+jmp_configure_columns JMP     configure_columns        ;F5AB: 7E F6 F8 
+jmp_configure_duplexing JMP     configure_duplexing      ;F5AE: 7E F7 45 
+jmp_configure_tty JMP     configure_tty            ;F5B1: 7E F7 94 
 
 serial_init LDX     baud_config_ptr          ;F5B4: DE 36 
         LDAA    $06,X                    ;F5B6: A6 06 
@@ -957,8 +957,8 @@ ZF638   LDX     baud_config_ptr          ;F638: DE 36
 ZF648   JSR     ZF7F1                    ;F648: BD F7 F1 
         CMPB    #$FF                     ;F64B: C1 FF 
         BNE     ZF652                    ;F64D: 26 03 
-        JMP     ZF5A2                    ;F64F: 7E F5 A2 
-ZF652   JMP     ZF5A5                    ;F652: 7E F5 A5 
+        JMP     jmp_configure_baud       ;F64F: 7E F5 A2 
+ZF652   JMP     jmp_configure_parity     ;F652: 7E F5 A5 
 ZF655   STX     M005D                    ;F655: DF 5D 
         CLRA                             ;F657: 4F 
         JSR     get_position             ;F658: BD F3 D1 
@@ -1001,8 +1001,8 @@ ZF693   LDX     parity_config_ptr        ;F693: DE 38
 ZF6A0   JSR     ZF7F1                    ;F6A0: BD F7 F1 
         CMPB    #$FF                     ;F6A3: C1 FF 
         BNE     ZF6AA                    ;F6A5: 26 03 
-        JMP     ZF5A2                    ;F6A7: 7E F5 A2 
-ZF6AA   JMP     ZF5A8                    ;F6AA: 7E F5 A8 
+        JMP     jmp_configure_baud       ;F6A7: 7E F5 A2 
+ZF6AA   JMP     jmp_configure_stop_bits  ;F6AA: 7E F5 A8 
 
 configure_stop_bits LDX     stop_bits_config_ptr     ;F6AD: DE 3A 
         LDAB    $02,X                    ;F6AF: E6 02 
@@ -1039,8 +1039,8 @@ ZF6DE   LDX     stop_bits_config_ptr     ;F6DE: DE 3A
 ZF6EB   JSR     ZF7F1                    ;F6EB: BD F7 F1 
         CMPB    #$FF                     ;F6EE: C1 FF 
         BNE     ZF6F5                    ;F6F0: 26 03 
-        JMP     ZF5A5                    ;F6F2: 7E F5 A5 
-ZF6F5   JMP     ZF5AB                    ;F6F5: 7E F5 AB 
+        JMP     jmp_configure_parity     ;F6F2: 7E F5 A5 
+ZF6F5   JMP     jmp_configure_columns    ;F6F5: 7E F5 AB 
 
 configure_columns LDX     columns_config_ptr       ;F6F8: DE 3C 
         LDAB    $03,X                    ;F6FA: E6 03 
@@ -1079,8 +1079,8 @@ ZF72A   LDX     columns_config_ptr       ;F72A: DE 3C
 ZF738   JSR     ZF7F1                    ;F738: BD F7 F1 
         CMPB    #$FF                     ;F73B: C1 FF 
         BNE     ZF742                    ;F73D: 26 03 
-        JMP     ZF5A8                    ;F73F: 7E F5 A8 
-ZF742   JMP     ZF5AE                    ;F742: 7E F5 AE 
+        JMP     jmp_configure_stop_bits  ;F73F: 7E F5 A8 
+ZF742   JMP     jmp_configure_duplexing  ;F742: 7E F5 AE 
 
 configure_duplexing LDX     duplexing_config_ptr     ;F745: DE 3E 
         LDAB    $04,X                    ;F747: E6 04 
@@ -1121,8 +1121,8 @@ ZF778   LDX     duplexing_config_ptr     ;F778: DE 3E
 ZF787   JSR     ZF7F1                    ;F787: BD F7 F1 
         CMPB    #$FF                     ;F78A: C1 FF 
         BNE     ZF791                    ;F78C: 26 03 
-        JMP     ZF5AB                    ;F78E: 7E F5 AB 
-ZF791   JMP     ZF5B1                    ;F791: 7E F5 B1 
+        JMP     jmp_configure_columns    ;F78E: 7E F5 AB 
+ZF791   JMP     jmp_configure_tty        ;F791: 7E F5 B1 
 
 configure_tty LDX     tty_config_ptr           ;F794: DE 63 
         LDAB    $04,X                    ;F796: E6 04 
@@ -1163,8 +1163,8 @@ ZF7C7   LDX     tty_config_ptr           ;F7C7: DE 63
 ZF7D6   JSR     ZF7F1                    ;F7D6: BD F7 F1 
         CMPB    #$FF                     ;F7D9: C1 FF 
         BNE     ZF7E0                    ;F7DB: 26 03 
-        JMP     ZF5AE                    ;F7DD: 7E F5 AE 
-ZF7E0   JMP     ZF5B1                    ;F7E0: 7E F5 B1 
+        JMP     jmp_configure_duplexing  ;F7DD: 7E F5 AE 
+ZF7E0   JMP     jmp_configure_tty        ;F7E0: 7E F5 B1 
 ZF7E3   LDAA    ,X                       ;F7E3: A6 00 
         BEQ     ZF7F1                    ;F7E5: 27 0A 
         INX                              ;F7E7: 08 

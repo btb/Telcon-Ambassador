@@ -429,6 +429,13 @@ comment f564 SET MODE key pressed
 label F564 do_command_set_mode
 const f561
 
+label f5a2 jmp_configure_baud
+label f5a5 jmp_configure_parity
+label f5a8 jmp_configure_stop_bits
+label f5ab jmp_configure_columns
+label f5ae jmp_configure_duplexing
+label f5b1 jmp_configure_tty
+
 comment f5b4
 label f5b4 serial_init
 lcomment f5f8 RTS, error reset, Rx enable, DTR, Tx enable
