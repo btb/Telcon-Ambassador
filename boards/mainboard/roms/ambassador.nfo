@@ -459,6 +459,9 @@ label f745 configure_duplexing
 comment f794
 label f794 configure_tty
 
+comment f7e3
+label f7e3 print_text
+
 comment f7fa
 comment f7fa wait for navigation keypress.
 comment f7fa return in A,B:
@@ -483,13 +486,23 @@ dec f838
 
 comment f83b
 comment f83b CTRL+ESC key pressed
-label F83B do_command_8D
+label F83B do_command_edit_tabs
 dec f841
 dec f84b
 dec f8d5
+lcomment f87a return pressed
+lcomment f87f up or down pressed
+lcomment f88b left pressed
+lcomment f898 down pressed
 
 comment f8fd
 label f8fd add_tab_stop
+
+comment f918
+label f918 tab_cursor_left
+
+comment f924
+label f924 tab_cursor_right
 
 comment f932
 label f932 delete_tab_stop
@@ -705,6 +718,7 @@ label fd2a receive_buffer_fill_low
 label fd2c receive_buffer_fill_high
 
 comment fd2e
+label fd2e ruler_text
 data fd2e-fe3a
 
 comment fd43

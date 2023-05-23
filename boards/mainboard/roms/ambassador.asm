@@ -850,7 +850,7 @@ do_command_set_mode SEI                              ;F564: 0F
         JSR     move_home                ;F56C: BD F3 63 
         JSR     blank_line               ;F56F: BD F4 4F 
         LDX     #config_text             ;F572: CE FD 43 
-        JSR     ZF7E3                    ;F575: BD F7 E3 
+        JSR     print_text               ;F575: BD F7 E3 
         LDX     baud_config_ptr          ;F578: DE 36 
         LDAB    $05,X                    ;F57A: E6 05 
         JSR     ZF655                    ;F57C: BD F6 55 
@@ -964,7 +964,7 @@ ZF655   STX     M005D                    ;F655: DF 5D
         JSR     get_position             ;F658: BD F3 D1 
         STX     cursor_position_ptr      ;F65B: DF 2D 
         LDX     M005D                    ;F65D: DE 5D 
-        JMP     ZF7E3                    ;F65F: 7E F7 E3 
+        JMP     print_text               ;F65F: 7E F7 E3 
 
 configure_parity LDX     parity_config_ptr        ;F662: DE 38 
         LDAB    $02,X                    ;F664: E6 02 
@@ -1165,13 +1165,14 @@ ZF7D6   JSR     ZF7F1                    ;F7D6: BD F7 F1
         BNE     ZF7E0                    ;F7DB: 26 03 
         JMP     jmp_configure_duplexing  ;F7DD: 7E F5 AE 
 ZF7E0   JMP     jmp_configure_tty        ;F7E0: 7E F5 B1 
-ZF7E3   LDAA    ,X                       ;F7E3: A6 00 
+
+print_text LDAA    ,X                       ;F7E3: A6 00 
         BEQ     ZF7F1                    ;F7E5: 27 0A 
         INX                              ;F7E7: 08 
         STX     temp_char                ;F7E8: DF 30 
         JSR     add_character_to_screen  ;F7EA: BD F1 E7 
         LDX     temp_char                ;F7ED: DE 30 
-        BRA     ZF7E3                    ;F7EF: 20 F2 
+        BRA     print_text               ;F7EF: 20 F2 
 ZF7F1   LDX     cursor_position_ptr      ;F7F1: DE 2D 
         LDAA    ,X                       ;F7F3: A6 00 
         ANDA    #$7F                     ;F7F5: 84 7F 
@@ -1227,7 +1228,7 @@ ZF833   CMPA    #$84                     ;F833: 81 84          got command_up?
         RTS                              ;F83A: 39 
 
 ; CTRL+ESC key pressed
-do_command_8D SEI                              ;F83B: 0F 
+do_command_edit_tabs SEI                              ;F83B: 0F 
         LDAA    max_column               ;F83C: 96 48 
         STAA    max_column_temp          ;F83E: 97 41 
         LDAA    #79                      ;F840: 86 4F 
@@ -1236,8 +1237,8 @@ do_command_8D SEI                              ;F83B: 0F
         JSR     move_home                ;F847: BD F3 63 
         LDAA    #4                       ;F84A: 86 04 
         STAA    counter                  ;F84C: 97 61 
-ZF84E   LDX     #MFD2E                   ;F84E: CE FD 2E 
-        JSR     ZF7E3                    ;F851: BD F7 E3 
+ZF84E   LDX     #ruler_text              ;F84E: CE FD 2E 
+        JSR     print_text               ;F851: BD F7 E3 
         DEC     >counter                 ;F854: 7A 00 61 
         BNE     ZF84E                    ;F857: 26 F5 
         CLRA                             ;F859: 4F 
@@ -1256,21 +1257,21 @@ ZF85D   LDAB    ,X                       ;F85D: E6 00
 ZF873   JSR     move_home                ;F873: BD F3 63 
 ZF876   JSR     get_key                  ;F876: BD F7 FA 
         TSTB                             ;F879: 5D 
-        BNE     ZF87F                    ;F87A: 26 03 
+        BNE     ZF87F                    ;F87A: 26 03          return pressed
         JMP     ZF8ED                    ;F87C: 7E F8 ED 
-ZF87F   BPL     ZF897                    ;F87F: 2A 16 
+ZF87F   BPL     ZF897                    ;F87F: 2A 16          up or down pressed
         LDX     cursor_position_ptr      ;F881: DE 2D 
         LDAA    ,X                       ;F883: A6 00 
         ANDA    #$7F                     ;F885: 84 7F 
         STAA    ,X                       ;F887: A7 00 
         CMPB    #$FF                     ;F889: C1 FF 
-        BEQ     ZF892                    ;F88B: 27 05 
-        JSR     ZF924                    ;F88D: BD F9 24 
+        BEQ     ZF892                    ;F88B: 27 05          left pressed
+        JSR     tab_cursor_right         ;F88D: BD F9 24 
         BRA     ZF876                    ;F890: 20 E4 
-ZF892   JSR     ZF918                    ;F892: BD F9 18 
+ZF892   JSR     tab_cursor_left          ;F892: BD F9 18 
         BRA     ZF876                    ;F895: 20 DF 
 ZF897   TSTA                             ;F897: 4D 
-        BNE     ZF8B7                    ;F898: 26 1D 
+        BNE     ZF8B7                    ;F898: 26 1D          down pressed
         LDX     #tab_stop_array+9        ;F89A: CE 08 2C 
         LDAA    ,X                       ;F89D: A6 00 
         BEQ     ZF8A4                    ;F89F: 27 03 
@@ -1331,13 +1332,15 @@ ZF90E   INX                              ;F90E: 08
         RTS                              ;F914: 39 
 ZF915   STAB    ,X                       ;F915: E7 00 
 ZF917   RTS                              ;F917: 39 
-ZF918   CLRA                             ;F918: 4F 
+
+tab_cursor_left CLRA                             ;F918: 4F 
         LDAB    current_column           ;F919: D6 45 
         BEQ     ZF91E                    ;F91B: 27 01 
         DECB                             ;F91D: 5A 
 ZF91E   JSR     get_position             ;F91E: BD F3 D1 
         JMP     blink_cursor             ;F921: 7E F3 C8 
-ZF924   CLRA                             ;F924: 4F 
+
+tab_cursor_right CLRA                             ;F924: 4F 
         LDAB    current_column           ;F925: D6 45 
         CMPB    max_column               ;F927: D1 48 
         BEQ     ZF92C                    ;F929: 27 01 
@@ -1910,7 +1913,7 @@ copy_line_buffer_to_screen LDX     #screen_buffer           ;FCD9: CE 00 80
         FDB     do_command_print_transmit ;FCFA: FA 99          0x8a
         FDB     do_command_nop           ;FCFC: F4 7D          0x8b
         FDB     do_command_break         ;FCFE: F4 7E          0x8c
-        FDB     do_command_8D            ;FD00: F8 3B          0x8d
+        FDB     do_command_edit_tabs     ;FD00: F8 3B          0x8d
         FDB     do_command_return        ;FD02: F4 97          0x8e
         FDB     do_command_backspace     ;FD04: F4 B1          0x8f
         FDB     do_command_carriage_return ;FD06: FA 50          0x90
@@ -1936,7 +1939,7 @@ receive_buffer_fill_medium FDB     $029C                    ;FD28: 02 9C
 receive_buffer_fill_low FDB     $01C2                    ;FD2A: 01 C2 
 receive_buffer_fill_high FDB     $02EE                    ;FD2C: 02 EE 
 
-MFD2E   FCC     "1----6----1----6----"   ;FD2E: 31 2D 2D 2D 2D 36 2D 2D 2D 2D 31 2D 2D 2D 2D 36 2D 2D 2D 2D 
+ruler_text FCC     "1----6----1----6----"   ;FD2E: 31 2D 2D 2D 2D 36 2D 2D 2D 2D 31 2D 2D 2D 2D 36 2D 2D 2D 2D 
         FCB     $00                      ;FD42: 00 
 
 config_text FCC     "  V1.0 XXXX-BAUD X LE"  ;FD43: 20 20 56 31 2E 30 20 58 58 58 58 2D 42 41 55 44 20 58 20 4C 45 
