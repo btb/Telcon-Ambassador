@@ -353,7 +353,7 @@ label f3a0 do_cursor_backward
 comment f3b1
 comment f3b1 UP key pressed
 label F3B1 do_command_up
-comment f4c5 CUU received
+comment f3b7 CUU received
 label f3b7 do_cursor_up
 
 comment f3c8

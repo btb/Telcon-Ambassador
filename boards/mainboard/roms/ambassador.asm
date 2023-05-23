@@ -591,6 +591,7 @@ ZF3AB   JSR     get_position             ;F3AB: BD F3 D1
 ; UP key pressed
 do_command_up LDX     #esc_seq_up              ;F3B1: CE FE 22 
         JSR     send_escape_sequence     ;F3B4: BD F1 AD 
+; CUU received
 do_cursor_up LDAB    current_column           ;F3B7: D6 45 
 ZF3B9   LDAA    current_row              ;F3B9: 96 44 
         DECA                             ;F3BB: 4A 
@@ -756,7 +757,6 @@ do_command_backspace TST     >duplexing_mode          ;F4B1: 7D 00 28
         BEQ     do_command_backspace2    ;F4BE: 27 05 
         LDX     cursor_position_ptr      ;F4C0: DE 2D 
         JMP     blink_cursor             ;F4C2: 7E F3 C8 
-; CUU received
 
 ; BS received
 do_command_backspace2 LDX     cursor_position_ptr      ;F4C5: DE 2D 
