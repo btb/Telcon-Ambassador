@@ -4,6 +4,8 @@ option 6800
 option noasc
 option noflex
 
+label 0000 null_ptr
+
 label 0027 stack_top
 lcomment 0027 top of stack
 
@@ -14,7 +16,7 @@ label 07FF screen_max_ptr
 lcomment 07FF last address of SCREEN
 
 label 0028 duplexing_mode
-lcomment 0028 char: duplexing control byte. page=1, half=0, full=-1
+lcomment 0028 char: duplexing control byte. PAG=1, HDX=0, FDX=-1
 
 label 0029 receive_buffer_tail_ptr
 lcomment 0029 char \*: pointer to tail of receive buffer FIFO
@@ -94,6 +96,7 @@ label 0061 counter
 lcomment 0061 char: loop counter
 
 label 0062 tty_mode
+lcomment 0062 char: tty mode. no=0, yes=1
 label 0063 tty_config_ptr
 lcomment 0063 struct tty \*: pointer to current tty config
 
@@ -108,6 +111,12 @@ lcomment 0068 char: incremented if we send XOFF
 
 label 0069 misc_data
 lcomment 0069 char: data byte sent out to the speaker/ind4/ind5/ind6 port
+
+label 006a beep_timer
+lcomment 006a char: increments while speaker is sounding, stops when it reaches 150
+
+label 006b beep_delay
+lcomment 006b char: no speaker until this matches some bits of $03 ?
 
 label 006C param1
 lcomment 006C char: first parameter in escape sequence
@@ -124,6 +133,12 @@ lcomment 0073 char: incremented when we're currently processing a received escap
 
 label 0078 flow_control_mode
 lcomment 0078 char: flow control mode. 0==XON/XOFF
+
+label 0079 hide_control_chars
+lcomment 0079 char: clear for visible control characters, $08 for invisible
+
+label 007a show_cursor
+lcomment 007a char: clear for no invert, $80 for invert
 
 label 0080 screen_buffer
 lcomment 0080 char[80x24]: the screen buffer
@@ -173,7 +188,7 @@ label B00F misc_port_control
 lcomment B00F char: speaker, ind4, ind5, ind6 control
 
 comment f000 RESET handler
-comment f000 set stack pointer to 0x27
+comment f000 set stack pointer to $27
 comment f003 clear registers
 comment f008 clear memory from 0 to mem_max  (0BFFh)
 comment f017 disable interrupts
@@ -210,6 +225,7 @@ comment f099 set columns config to 80
 
 comment f0bb
 label f0bb main
+dec f0be
 comment f0c4 check read buffer
 comment f0cd process read buffer
 comment f0d0 fold read buffer tail if necessary
@@ -228,9 +244,9 @@ lcomment f12c command_backspace2
 lcomment f130 HT - Horizontal Tab
 lcomment f134 command_horizontal_tab
 lcomment f138 DC2 - Device Control Two
-lcomment f13c command_printer_enable
+lcomment f13c command_print_enable
 lcomment f140 DC4 - Device Control Four
-lcomment f144 command_printer_disable
+lcomment f144 command_print_disable
 lcomment f148 BEL - Bell, Alert
 lcomment f14c command_bell
 lcomment f150 ESC - Escape
@@ -241,21 +257,29 @@ label f16a handle_received_command_code
 comment f16d
 label f16d check_key_buffer
 lcomment f189 BEL - Bell, Alert
+lcomment f193 PAG
+lcomment f19b HDX
 lcomment f1a0 LF - Line Feed
 
 comment f1ad
 label f1ad send_escape_sequence
+lcomment f1b0 PAG
+lcomment f1be HDX
 
 comment f1c8
 label f1c8 transmit_character
 
 comment f1cd
 label f1cd send_serial_byte
+lcomment f1d7 not TTY
 
 comment f1e7
 label f1e7 add_character_to_screen
+lcomment f1ea not TTY
 comment f1ec if alphabetic, make uppercase
+lcomment f1f9 PAG or HDX
 lcomment f1fb SP - Space
+lcomment f1fd not a control character
 dec f21c
 
 comment f222
@@ -305,6 +329,8 @@ lcomment f2b5 DC1 - XON
 
 comment f2bc
 label f2bc soft_reset
+dec f2e1
+lcomment f2ed printer disabled?
 lcomment f2f5 RTS, error reset, Rx enable, DTR, Tx enable
 bin f2f6
 
@@ -358,8 +384,8 @@ label f3b7 do_cursor_up
 
 comment f3c8
 comment f3c8 make X the current cursor position.
-comment f3c8 inverts the character if M007A is set to 80h
-label f3c8 blink_cursor
+comment f3c8 invert character if show_cursor is set
+label f3c8 paint_cursor
 
 comment f3d1
 comment f3d1 given a row and column, find the address in the screen buffer,
@@ -404,11 +430,16 @@ bin f492
 comment f497
 comment f497 RETURN key pressed
 label F497 do_command_return
+lcomment f49a PAG
 lcomment f49c CR - Carriage Return
+lcomment f4a4 HDX
 
 comment f4b1
 comment f4b1 BACK SPACE key pressed
 label F4B1 do_command_backspace
+lcomment f4b4 PAG
+lcomment f4b6 BS - Backspace
+lcomment f4be HDX
 
 comment f4c5
 comment f4c5 BS received
@@ -417,6 +448,7 @@ label F4C5 do_command_backspace2
 comment f4d8
 comment f4d8 PRINT XMIT key pressed
 label F4D8 do_command_transmit
+lcomment f4db PAG
 
 comment f51f
 label f51f transmit_CR_LF
@@ -512,14 +544,31 @@ label F949 do_command_horizontal_tab
 
 comment f97e
 comment f97e CTRL+I key pressed
-label F97E do_command_99
+label F97E do_command_tab
+lcomment f981 HDX or FDX
+lcomment f986 HT - Horizontal Tab
+lcomment f98e PAG
 
 comment f998
 comment f998 SHIFT+PRINT XMIT key pressed
 label F998 do_command_print
+lcomment f998 printer enabled?
 
 comment fa14
 label fa14 print_character
+lcomment fa14 printer enabled?
+lcomment fa20 LF - Line Feed
+lcomment fa26 SP - Space
+lcomment fa28 not a control character
+lcomment fa2a replace with Space
+lcomment fa2e not lower case
+lcomment fa30 make upper case
+lcomment fa32 invert bits
+lcomment fa33 send to printer
+lcomment fa36 set PRCON line low
+bin fa37
+lcomment fa42 set PRCON line high
+bin fa43
 
 comment fa50
 comment fa50 CR received
@@ -532,12 +581,14 @@ label FA59 do_command_line_feed
 comment fa6b
 comment fa6b DC2 received
 comment fa6b CTRL+1 key pressed
-label FA6B do_command_printer_enable
+label FA6B do_command_print_enable
+lcomment fa6b printer disabled?
 
 comment fa7b
 comment fa7b DC4 received
 comment fa7b CTRL+2 key pressed
-label FA7B do_command_printer_disable
+label FA7B do_command_print_disable
+lcomment fa7b printer disabled?
 
 comment fa8b
 comment fa8b send 3 NULL characters to printer
@@ -559,8 +610,20 @@ lcomment faa8 BEL - Bell, Alert
 comment fab1
 comment fab1 CTRL+4 key pressed
 label FAB1 do_command_98
+comment fab3 turn off bits for LED5 and LED6?
+bin fab4
 
 comment fabf
+label fabf speaker_control
+dec facf
+bin fad6
+lcomment fad7 speaker low
+lcomment fad9 set speaker low
+bin fada
+lcomment fae1 set speaker high
+bin fae2
+lcomment fae7 set speaker low
+bin fae8
 
 comment faeb
 comment faeb CTRL+5 key pressed
@@ -636,6 +699,8 @@ comment fc5e is this tab at the current position?
 
 comment fc6b
 comment fc6b Control Function - Load LEDs (DEC Private)
+lcomment fc6B start at location before param1 but then...
+lcomment fc6e increment to wanted param
 label fc6b cs_DECLL
 comment fc71 0 - all off
 dec fc74
@@ -651,9 +716,11 @@ bin fc8e
 bin fc94
 
 comment fc97
-comment fc97 Control Function - Set Lines Per Page (DEC Private)
-comment fc97 SLPP only takes one param, so probably wrong...?
-label fc97 cs_DECSLPP
+comment fc97 Control Function - Text Cursor Enable Mode and Show Control Character Mode
+comment fc97 probably Telcon-specific. Similar functions as the vt510 CRM and DECTCEM but with different sequences.
+comment fc97 takes 2 parameters in any order.
+comment fc97 6: hide cursor, 7: show cursor, 8: hide control characters, 9: show control characters
+label fc97 cs_TCEMCRM
 dec fc9e
 dec fca8
 dec fcb6
@@ -671,37 +738,37 @@ dec fcdf
 
 comment fce6
 comment fce6 Array of command addresses used by handle_command_code (and handle_received_command_code).
-comment fce6 Command codes begin at 0x80 and are generated by the keyboard or a received command.
+comment fce6 Command codes begin at $80 and are generated by the keyboard or a received command.
 cvec fce6-fd1f
-lcomment fce6 0x80
-lcomment fce8 0x81
-lcomment fcea 0x82
-lcomment fcec 0x83
-lcomment fcee 0x84
-lcomment fcf0 0x85
-lcomment fcf2 0x86
-lcomment fcf4 0x87
-lcomment fcf6 0x88
-lcomment fcf8 0x89
-lcomment fcfa 0x8a
-lcomment fcfc 0x8b
-lcomment fcfe 0x8c
-lcomment fd00 0x8d
-lcomment fd02 0x8e
-lcomment fd04 0x8f
-lcomment fd06 0x90
-lcomment fd08 0x91
-lcomment fd0a 0x92
-lcomment fd0c 0x93
-lcomment fd0e 0x94
-lcomment fd10 0x95
-lcomment fd12 0x96
-lcomment fd14 0x97
-lcomment fd16 0x98
-lcomment fd18 0x99
-lcomment fd1a 0x9a
-lcomment fd1c 0x9b
-lcomment fd1e 0x9c
+lcomment fce6 $80
+lcomment fce8 $81
+lcomment fcea $82
+lcomment fcec $83
+lcomment fcee $84
+lcomment fcf0 $85
+lcomment fcf2 $86
+lcomment fcf4 $87
+lcomment fcf6 $88
+lcomment fcf8 $89
+lcomment fcfa $8a
+lcomment fcfc $8b
+lcomment fcfe $8c
+lcomment fd00 $8d
+lcomment fd02 $8e
+lcomment fd04 $8f
+lcomment fd06 $90
+lcomment fd08 $91
+lcomment fd0a $92
+lcomment fd0c $93
+lcomment fd0e $94
+lcomment fd10 $95
+lcomment fd12 $96
+lcomment fd14 $97
+lcomment fd16 $98
+lcomment fd18 $99
+lcomment fd1a $9a
+lcomment fd1c $9b
+lcomment fd1e $9c
 
 comment fd20
 word fd20-fd27
