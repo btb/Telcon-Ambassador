@@ -283,9 +283,8 @@ lcomment f1fd not a control character
 dec f21c
 
 comment f222
+label f222 increment_row
 dec f225
-
-comment f22e
 
 comment f235
 lcomment f240 RxRDY
@@ -781,8 +780,11 @@ label fd26 mem_max
 comment fd28
 word fd28-fd2d
 label fd28 receive_buffer_fill_medium
+lcomment fd28 668 bytes
 label fd2a receive_buffer_fill_low
+lcomment fd2a 450 bytes
 label fd2c receive_buffer_fill_high
+lcomment fd2c 750 bytes
 
 comment fd2e
 label fd2e ruler_text

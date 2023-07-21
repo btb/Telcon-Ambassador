@@ -365,17 +365,16 @@ ZF212   CMPB    max_column               ;F212: D1 48
         TST     >print_enabled           ;F216: 7D 00 5F 
         BEQ     ZF21F                    ;F219: 27 04 
         CMPB    #80                      ;F21B: C1 50 
-        BNE     ZF222                    ;F21D: 26 03 
+        BNE     increment_row            ;F21D: 26 03 
 ZF21F   INC     >M0060                   ;F21F: 7C 00 60 
 
-ZF222   CLRB                             ;F222: 5F 
+increment_row CLRB                             ;F222: 5F 
         INCA                             ;F223: 4C 
         CMPA    #23                      ;F224: 81 17 
         BLE     ZF22E                    ;F226: 2F 06 
         STAB    current_column           ;F228: D7 45 
         JSR     scroll_screen            ;F22A: BD F4 3A 
         RTS                              ;F22D: 39 
-
 ZF22E   JSR     get_position             ;F22E: BD F3 D1 
         JSR     paint_cursor             ;F231: BD F3 C8 
         RTS                              ;F234: 39 
@@ -745,7 +744,7 @@ do_command_return TST     >duplexing_mode          ;F497: 7D 00 28
         LDX     cursor_position_ptr      ;F4A6: DE 2D 
         JMP     paint_cursor             ;F4A8: 7E F3 C8 
 ZF4AB   LDAA    current_row              ;F4AB: 96 44 
-        JSR     ZF222                    ;F4AD: BD F2 22 
+        JSR     increment_row            ;F4AD: BD F2 22 
         RTS                              ;F4B0: 39 
 
 ; BACK SPACE key pressed
@@ -1938,9 +1937,9 @@ receive_buffer_max FDB     $0B2D                    ;FD22: 0B 2D
 tab_array_end FDB     $082D                    ;FD24: 08 2D          end of tab stop array
 mem_max FDB     $0BFF                    ;FD26: 0B FF 
 
-receive_buffer_fill_medium FDB     $029C                    ;FD28: 02 9C 
-receive_buffer_fill_low FDB     $01C2                    ;FD2A: 01 C2 
-receive_buffer_fill_high FDB     $02EE                    ;FD2C: 02 EE 
+receive_buffer_fill_medium FDB     $029C                    ;FD28: 02 9C          668 bytes
+receive_buffer_fill_low FDB     $01C2                    ;FD2A: 01 C2          450 bytes
+receive_buffer_fill_high FDB     $02EE                    ;FD2C: 02 EE          750 bytes
 
 ruler_text FCC     "1----6----1----6----"   ;FD2E: 31 2D 2D 2D 2D 36 2D 2D 2D 2D 31 2D 2D 2D 2D 36 2D 2D 2D 2D 
         FCB     $00                      ;FD42: 00 
