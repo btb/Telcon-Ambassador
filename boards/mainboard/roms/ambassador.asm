@@ -1951,7 +1951,7 @@ config_text FCC     "  V1.0 XXXX-BAUD X LE"  ;FD43: 20 20 56 31 2E 30 20 58 58 5
 
 ; struct baud {
 ; char text[5];   // four characters, padded with leading spaces, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // bits to set on ABCD pins of MM5307 chip, in reverse order
 ; }
 baud_110 FCC     " 110"                   ;FD82: 20 31 31 30 
@@ -1974,7 +1974,7 @@ baud_max FDB     baud_9600                ;FDBA: FD B3
 
 ; struct parity {
 ; char text[2];   // 1 character, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // bits for sending to the USART
 ; }
 parity_even_7 FCC     "E"                      ;FDBC: 45             even parity, 7 bits, 16xBRF
@@ -1988,7 +1988,7 @@ parity_max FDB     parity_none_8            ;FDC8: FD C4
 
 ; struct stop_bits {
 ; char text[2];   // 1 character, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // bits for sending to the USART
 ; }
 stop_bits_1 FCC     "1"                      ;FDCA: 31             1 stop bit
@@ -2000,7 +2000,7 @@ stop_bits_max FDB     stop_bits_2              ;FDD2: FD CE
 
 ; struct columns {
 ; char text[3];   // two characters, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // # of columns - 1
 ; }
 columns_40 FCC     "40"                     ;FDD4: 34 30 
@@ -2028,7 +2028,7 @@ columns_max FDB     columns_80               ;FDF7: FD F2
 
 ; struct duplexing {
 ; char text[4];   // three characters, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // 1,0,-1
 ; }
 duplexing_page FCC     "PAG"                    ;FDF9: 50 41 47 
@@ -2047,7 +2047,7 @@ duplexing_max FDB     duplexing_full           ;FE0B: FE 05
 
 ; struct tty {
 ; char text[4];   // three characters, null terminated
-; char offset;    // offset into CFGTXT
+; char offset;    // offset into config_text
 ; char value;     // # 0 or 1
 ; }
 tty_no  FCC     "NO "                    ;FE0D: 4E 4F 20 

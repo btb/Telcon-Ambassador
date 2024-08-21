@@ -796,7 +796,7 @@ label fd43 config_text
 comment fd82
 comment fd82 struct baud {
 comment fd82       char text[5];   // four characters, padded with leading spaces, null terminated
-comment fd82       char offset;    // offset into CFGTXT
+comment fd82       char offset;    // offset into config_text
 comment fd82       char value;     // bits to set on ABCD pins of MM5307 chip, in reverse order
 comment fd82 }
 label fd82 baud_110
@@ -813,7 +813,7 @@ dvec fdba
 comment fdbc
 comment fdbc struct parity {
 comment fdbc       char text[2];   // 1 character, null terminated
-comment fdbc       char offset;    // offset into CFGTXT
+comment fdbc       char offset;    // offset into config_text
 comment fdbc       char value;     // bits for sending to the USART
 comment fdbc }
 lcomment fdbc even parity, 7 bits, 16xBRF
@@ -828,7 +828,7 @@ dvec fdc8
 comment fdca
 comment fdca struct stop_bits {
 comment fdca       char text[2];   // 1 character, null terminated
-comment fdca       char offset;    // offset into CFGTXT
+comment fdca       char offset;    // offset into config_text
 comment fdca       char value;     // bits for sending to the USART
 comment fdca }
 lcomment fdca 1 stop bit
@@ -841,7 +841,7 @@ dvec fdd2
 comment fdd4
 comment fdd4 struct columns {
 comment fdd4       char text[3];   // two characters, null terminated
-comment fdd4       char offset;    // offset into CFGTXT
+comment fdd4       char offset;    // offset into config_text
 comment fdd4       char value;     // # of columns - 1
 comment fdd4 }
 label fdd4 columns_40
@@ -857,7 +857,7 @@ dvec fdf7
 comment fdf9
 comment fdf9 struct duplexing {
 comment fdf9       char text[4];   // three characters, null terminated
-comment fdf9       char offset;    // offset into CFGTXT
+comment fdf9       char offset;    // offset into config_text
 comment fdf9       char value;     // 1,0,-1
 comment fdf9 }
 label fdf9 duplexing_page
@@ -869,7 +869,7 @@ dvec fe0b
 comment fe0d
 comment fe0d struct tty {
 comment fe0d       char text[4];   // three characters, null terminated
-comment fe0d       char offset;    // offset into CFGTXT
+comment fe0d       char offset;    // offset into config_text
 comment fe0d       char value;     // # 0 or 1
 comment fe0d }
 label fe0d tty_no
