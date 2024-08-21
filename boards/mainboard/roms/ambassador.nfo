@@ -859,6 +859,7 @@ comment fdf9 struct duplexing {
 comment fdf9       char text[4];   // three characters, null terminated
 comment fdf9       char offset;    // offset into CFGTXT
 comment fdf9       char value;     // 1,0,-1
+comment fdf9 }
 label fdf9 duplexing_page
 label fdff duplexing_half
 label fe05 duplexing_full

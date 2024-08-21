@@ -2030,6 +2030,7 @@ columns_max FDB     columns_80               ;FDF7: FD F2
 ; char text[4];   // three characters, null terminated
 ; char offset;    // offset into CFGTXT
 ; char value;     // 1,0,-1
+; }
 duplexing_page FCC     "PAG"                    ;FDF9: 50 41 47 
         FCB     $00                      ;FDFC: 00 
         FCC     "."                      ;FDFD: 2E 
