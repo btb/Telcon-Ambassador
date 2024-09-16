@@ -852,22 +852,22 @@ do_command_set_mode SEI                              ;F564: 0F
         JSR     print_text               ;F575: BD F7 E3 
         LDX     baud_config_ptr          ;F578: DE 36 
         LDAB    $05,X                    ;F57A: E6 05 
-        JSR     ZF655                    ;F57C: BD F6 55 
+        JSR     print_parameter          ;F57C: BD F6 55 
         LDX     parity_config_ptr        ;F57F: DE 38 
         LDAB    $02,X                    ;F581: E6 02 
-        JSR     ZF655                    ;F583: BD F6 55 
+        JSR     print_parameter          ;F583: BD F6 55 
         LDX     stop_bits_config_ptr     ;F586: DE 3A 
         LDAB    $02,X                    ;F588: E6 02 
-        JSR     ZF655                    ;F58A: BD F6 55 
+        JSR     print_parameter          ;F58A: BD F6 55 
         LDX     columns_config_ptr       ;F58D: DE 3C 
         LDAB    $03,X                    ;F58F: E6 03 
-        JSR     ZF655                    ;F591: BD F6 55 
+        JSR     print_parameter          ;F591: BD F6 55 
         LDX     duplexing_config_ptr     ;F594: DE 3E 
         LDAB    $04,X                    ;F596: E6 04 
-        JSR     ZF655                    ;F598: BD F6 55 
+        JSR     print_parameter          ;F598: BD F6 55 
         LDX     tty_config_ptr           ;F59B: DE 63 
         LDAB    $04,X                    ;F59D: E6 04 
-        JSR     ZF655                    ;F59F: BD F6 55 
+        JSR     print_parameter          ;F59F: BD F6 55 
 jmp_configure_baud JMP     configure_baud           ;F5A2: 7E F6 04 
 jmp_configure_parity JMP     configure_parity         ;F5A5: 7E F6 62 
 jmp_configure_stop_bits JMP     configure_stop_bits      ;F5A8: 7E F6 AD 
@@ -923,14 +923,14 @@ configure_baud LDX     baud_config_ptr          ;F604: DE 36
         JSR     get_key                  ;F60F: BD F7 FA 
         TSTB                             ;F612: 5D 
         BNE     ZF618                    ;F613: 26 03 
-        JMP     serial_init              ;F615: 7E F5 B4 
-ZF618   BPL     ZF61D                    ;F618: 2A 03 
-        JMP     ZF648                    ;F61A: 7E F6 48 
+        JMP     serial_init              ;F615: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF618   BPL     ZF61D                    ;F618: 2A 03          UP or DOWN pressed, changing baud
+        JMP     ZF648                    ;F61A: 7E F6 48       LEFT or RIGHT pressed
 ZF61D   TSTA                             ;F61D: 4D 
-        BEQ     ZF638                    ;F61E: 27 18 
+        BEQ     increment_baud           ;F61E: 27 18          UP pressed
         LDX     baud_config_ptr          ;F620: DE 36 
         CPX     #baud_110                ;F622: 8C FD 82 
-        BEQ     ZF62E                    ;F625: 27 07 
+        BEQ     save_baud                ;F625: 27 07          already at minimum value
         DEX                              ;F627: 09 
         DEX                              ;F628: 09 
         DEX                              ;F629: 09 
@@ -938,13 +938,13 @@ ZF61D   TSTA                             ;F61D: 4D
         DEX                              ;F62B: 09 
         DEX                              ;F62C: 09 
         DEX                              ;F62D: 09 
-ZF62E   STX     baud_config_ptr          ;F62E: DF 36 
+save_baud STX     baud_config_ptr          ;F62E: DF 36 
         LDAB    $05,X                    ;F630: E6 05 
-        JSR     ZF655                    ;F632: BD F6 55 
+        JSR     print_parameter          ;F632: BD F6 55 
         JMP     configure_baud           ;F635: 7E F6 04 
-ZF638   LDX     baud_config_ptr          ;F638: DE 36 
+increment_baud LDX     baud_config_ptr          ;F638: DE 36 
         CPX     baud_max                 ;F63A: BC FD BA 
-        BEQ     ZF62E                    ;F63D: 27 EF 
+        BEQ     save_baud                ;F63D: 27 EF          already at maximum value
         INX                              ;F63F: 08 
         INX                              ;F640: 08 
         INX                              ;F641: 08 
@@ -952,13 +952,16 @@ ZF638   LDX     baud_config_ptr          ;F638: DE 36
         INX                              ;F643: 08 
         INX                              ;F644: 08 
         INX                              ;F645: 08 
-        BRA     ZF62E                    ;F646: 20 E6 
+        BRA     save_baud                ;F646: 20 E6 
 ZF648   JSR     ZF7F1                    ;F648: BD F7 F1 
-        CMPB    #$FF                     ;F64B: C1 FF 
-        BNE     ZF652                    ;F64D: 26 03 
-        JMP     jmp_configure_baud       ;F64F: 7E F5 A2 
+        CMPB    #255                     ;F64B: C1 FF 
+        BNE     ZF652                    ;F64D: 26 03          RIGHT pressed, set parity
+        JMP     jmp_configure_baud       ;F64F: 7E F5 A2       LEFT pressed
 ZF652   JMP     jmp_configure_parity     ;F652: 7E F5 A5 
-ZF655   STX     M005D                    ;F655: DF 5D 
+
+; move the cursor to column B of the config line
+; and print the parameter value pointed to by X
+print_parameter STX     M005D                    ;F655: DF 5D 
         CLRA                             ;F657: 4F 
         JSR     get_position             ;F658: BD F3 D1 
         STX     cursor_position_ptr      ;F65B: DF 2D 
@@ -973,34 +976,34 @@ configure_parity LDX     parity_config_ptr        ;F662: DE 38
         JSR     get_key                  ;F66D: BD F7 FA 
         TSTB                             ;F670: 5D 
         BNE     ZF676                    ;F671: 26 03 
-        JMP     serial_init              ;F673: 7E F5 B4 
-ZF676   BPL     ZF67B                    ;F676: 2A 03 
-        JMP     ZF6A0                    ;F678: 7E F6 A0 
+        JMP     serial_init              ;F673: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF676   BPL     ZF67B                    ;F676: 2A 03          UP or DOWN pressed, changing parity
+        JMP     ZF6A0                    ;F678: 7E F6 A0       LEFT or RIGHT pressed
 ZF67B   TSTA                             ;F67B: 4D 
-        BEQ     ZF693                    ;F67C: 27 15 
+        BEQ     increment_parity         ;F67C: 27 15          UP pressed
         LDX     parity_config_ptr        ;F67E: DE 38 
         CPX     #parity_even_7           ;F680: 8C FD BC 
-        BEQ     ZF689                    ;F683: 27 04 
+        BEQ     save_parity              ;F683: 27 04          already at minimum value
         DEX                              ;F685: 09 
         DEX                              ;F686: 09 
         DEX                              ;F687: 09 
         DEX                              ;F688: 09 
-ZF689   STX     parity_config_ptr        ;F689: DF 38 
+save_parity STX     parity_config_ptr        ;F689: DF 38 
         LDAB    $02,X                    ;F68B: E6 02 
-        JSR     ZF655                    ;F68D: BD F6 55 
+        JSR     print_parameter          ;F68D: BD F6 55 
         JMP     configure_parity         ;F690: 7E F6 62 
-ZF693   LDX     parity_config_ptr        ;F693: DE 38 
+increment_parity LDX     parity_config_ptr        ;F693: DE 38 
         CPX     parity_max               ;F695: BC FD C8 
-        BEQ     ZF689                    ;F698: 27 EF 
+        BEQ     save_parity              ;F698: 27 EF          already at maximum value
         INX                              ;F69A: 08 
         INX                              ;F69B: 08 
         INX                              ;F69C: 08 
         INX                              ;F69D: 08 
-        BRA     ZF689                    ;F69E: 20 E9 
+        BRA     save_parity              ;F69E: 20 E9 
 ZF6A0   JSR     ZF7F1                    ;F6A0: BD F7 F1 
         CMPB    #$FF                     ;F6A3: C1 FF 
-        BNE     ZF6AA                    ;F6A5: 26 03 
-        JMP     jmp_configure_baud       ;F6A7: 7E F5 A2 
+        BNE     ZF6AA                    ;F6A5: 26 03          RIGHT pressed, set stop bits
+        JMP     jmp_configure_baud       ;F6A7: 7E F5 A2       LEFT pressed
 ZF6AA   JMP     jmp_configure_stop_bits  ;F6AA: 7E F5 A8 
 
 configure_stop_bits LDX     stop_bits_config_ptr     ;F6AD: DE 3A 
@@ -1011,34 +1014,34 @@ configure_stop_bits LDX     stop_bits_config_ptr     ;F6AD: DE 3A
         JSR     get_key                  ;F6B8: BD F7 FA 
         TSTB                             ;F6BB: 5D 
         BNE     ZF6C1                    ;F6BC: 26 03 
-        JMP     serial_init              ;F6BE: 7E F5 B4 
-ZF6C1   BPL     ZF6C6                    ;F6C1: 2A 03 
-        JMP     ZF6EB                    ;F6C3: 7E F6 EB 
+        JMP     serial_init              ;F6BE: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF6C1   BPL     ZF6C6                    ;F6C1: 2A 03          UP or DOWN pressed, changing stop bits
+        JMP     ZF6EB                    ;F6C3: 7E F6 EB       LEFT or RIGHT pressed
 ZF6C6   TSTA                             ;F6C6: 4D 
-        BEQ     ZF6DE                    ;F6C7: 27 15 
+        BEQ     increment_stop_bits      ;F6C7: 27 15          UP pressed
         LDX     stop_bits_config_ptr     ;F6C9: DE 3A 
         CPX     #stop_bits_1             ;F6CB: 8C FD CA 
-        BEQ     ZF6D4                    ;F6CE: 27 04 
+        BEQ     save_stop_bits           ;F6CE: 27 04          already at minimum value
         DEX                              ;F6D0: 09 
         DEX                              ;F6D1: 09 
         DEX                              ;F6D2: 09 
         DEX                              ;F6D3: 09 
-ZF6D4   STX     stop_bits_config_ptr     ;F6D4: DF 3A 
+save_stop_bits STX     stop_bits_config_ptr     ;F6D4: DF 3A 
         LDAB    $02,X                    ;F6D6: E6 02 
-        JSR     ZF655                    ;F6D8: BD F6 55 
+        JSR     print_parameter          ;F6D8: BD F6 55 
         JMP     configure_stop_bits      ;F6DB: 7E F6 AD 
-ZF6DE   LDX     stop_bits_config_ptr     ;F6DE: DE 3A 
+increment_stop_bits LDX     stop_bits_config_ptr     ;F6DE: DE 3A 
         CPX     stop_bits_max            ;F6E0: BC FD D2 
-        BEQ     ZF6D4                    ;F6E3: 27 EF 
+        BEQ     save_stop_bits           ;F6E3: 27 EF          already at maximum value
         INX                              ;F6E5: 08 
         INX                              ;F6E6: 08 
         INX                              ;F6E7: 08 
         INX                              ;F6E8: 08 
-        BRA     ZF6D4                    ;F6E9: 20 E9 
+        BRA     save_stop_bits           ;F6E9: 20 E9 
 ZF6EB   JSR     ZF7F1                    ;F6EB: BD F7 F1 
-        CMPB    #$FF                     ;F6EE: C1 FF 
-        BNE     ZF6F5                    ;F6F0: 26 03 
-        JMP     jmp_configure_parity     ;F6F2: 7E F5 A5 
+        CMPB    #255                     ;F6EE: C1 FF 
+        BNE     ZF6F5                    ;F6F0: 26 03          RIGHT pressed, set columns
+        JMP     jmp_configure_parity     ;F6F2: 7E F5 A5       LEFT pressed
 ZF6F5   JMP     jmp_configure_columns    ;F6F5: 7E F5 AB 
 
 configure_columns LDX     columns_config_ptr       ;F6F8: DE 3C 
@@ -1049,36 +1052,36 @@ configure_columns LDX     columns_config_ptr       ;F6F8: DE 3C
         JSR     get_key                  ;F703: BD F7 FA 
         TSTB                             ;F706: 5D 
         BNE     ZF70C                    ;F707: 26 03 
-        JMP     serial_init              ;F709: 7E F5 B4 
-ZF70C   BPL     ZF711                    ;F70C: 2A 03 
-        JMP     ZF738                    ;F70E: 7E F7 38 
+        JMP     serial_init              ;F709: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF70C   BPL     ZF711                    ;F70C: 2A 03          UP or DOWN pressed, changing stop bits
+        JMP     ZF738                    ;F70E: 7E F7 38       LEFT or RIGHT pressed
 ZF711   TSTA                             ;F711: 4D 
-        BEQ     ZF72A                    ;F712: 27 16 
+        BEQ     increment_columns        ;F712: 27 16          UP pressed
         LDX     columns_config_ptr       ;F714: DE 3C 
         CPX     #columns_40              ;F716: 8C FD D4 
-        BEQ     ZF720                    ;F719: 27 05 
+        BEQ     save_columns             ;F719: 27 05          already at minimum value
         DEX                              ;F71B: 09 
         DEX                              ;F71C: 09 
         DEX                              ;F71D: 09 
         DEX                              ;F71E: 09 
         DEX                              ;F71F: 09 
-ZF720   STX     columns_config_ptr       ;F720: DF 3C 
+save_columns STX     columns_config_ptr       ;F720: DF 3C 
         LDAB    $03,X                    ;F722: E6 03 
-        JSR     ZF655                    ;F724: BD F6 55 
+        JSR     print_parameter          ;F724: BD F6 55 
         JMP     configure_columns        ;F727: 7E F6 F8 
-ZF72A   LDX     columns_config_ptr       ;F72A: DE 3C 
+increment_columns LDX     columns_config_ptr       ;F72A: DE 3C 
         CPX     columns_max              ;F72C: BC FD F7 
-        BEQ     ZF720                    ;F72F: 27 EF 
+        BEQ     save_columns             ;F72F: 27 EF          already at maximum value
         INX                              ;F731: 08 
         INX                              ;F732: 08 
         INX                              ;F733: 08 
         INX                              ;F734: 08 
         INX                              ;F735: 08 
-        BRA     ZF720                    ;F736: 20 E8 
+        BRA     save_columns             ;F736: 20 E8 
 ZF738   JSR     ZF7F1                    ;F738: BD F7 F1 
-        CMPB    #$FF                     ;F73B: C1 FF 
-        BNE     ZF742                    ;F73D: 26 03 
-        JMP     jmp_configure_stop_bits  ;F73F: 7E F5 A8 
+        CMPB    #255                     ;F73B: C1 FF 
+        BNE     ZF742                    ;F73D: 26 03          RIGHT pressed, set duplexing
+        JMP     jmp_configure_stop_bits  ;F73F: 7E F5 A8       LEFT pressed
 ZF742   JMP     jmp_configure_duplexing  ;F742: 7E F5 AE 
 
 configure_duplexing LDX     duplexing_config_ptr     ;F745: DE 3E 
@@ -1089,38 +1092,38 @@ configure_duplexing LDX     duplexing_config_ptr     ;F745: DE 3E
         JSR     get_key                  ;F750: BD F7 FA 
         TSTB                             ;F753: 5D 
         BNE     ZF759                    ;F754: 26 03 
-        JMP     serial_init              ;F756: 7E F5 B4 
-ZF759   BPL     ZF75E                    ;F759: 2A 03 
-        JMP     ZF787                    ;F75B: 7E F7 87 
+        JMP     serial_init              ;F756: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF759   BPL     ZF75E                    ;F759: 2A 03          UP or DOWN pressed, changing duplexing
+        JMP     ZF787                    ;F75B: 7E F7 87       LEFT or RIGHT pressed
 ZF75E   TSTA                             ;F75E: 4D 
-        BEQ     ZF778                    ;F75F: 27 17 
+        BEQ     increment_duplexing      ;F75F: 27 17          UP pressed
         LDX     duplexing_config_ptr     ;F761: DE 3E 
         CPX     #duplexing_page          ;F763: 8C FD F9 
-        BEQ     ZF76E                    ;F766: 27 06 
+        BEQ     save_duplexing           ;F766: 27 06          already at minimum value
         DEX                              ;F768: 09 
         DEX                              ;F769: 09 
         DEX                              ;F76A: 09 
         DEX                              ;F76B: 09 
         DEX                              ;F76C: 09 
         DEX                              ;F76D: 09 
-ZF76E   STX     duplexing_config_ptr     ;F76E: DF 3E 
+save_duplexing STX     duplexing_config_ptr     ;F76E: DF 3E 
         LDAB    $04,X                    ;F770: E6 04 
-        JSR     ZF655                    ;F772: BD F6 55 
+        JSR     print_parameter          ;F772: BD F6 55 
         JMP     configure_duplexing      ;F775: 7E F7 45 
-ZF778   LDX     duplexing_config_ptr     ;F778: DE 3E 
+increment_duplexing LDX     duplexing_config_ptr     ;F778: DE 3E 
         CPX     duplexing_max            ;F77A: BC FE 0B 
-        BEQ     ZF76E                    ;F77D: 27 EF 
+        BEQ     save_duplexing           ;F77D: 27 EF          already at maximum value
         INX                              ;F77F: 08 
         INX                              ;F780: 08 
         INX                              ;F781: 08 
         INX                              ;F782: 08 
         INX                              ;F783: 08 
         INX                              ;F784: 08 
-        BRA     ZF76E                    ;F785: 20 E7 
+        BRA     save_duplexing           ;F785: 20 E7 
 ZF787   JSR     ZF7F1                    ;F787: BD F7 F1 
-        CMPB    #$FF                     ;F78A: C1 FF 
-        BNE     ZF791                    ;F78C: 26 03 
-        JMP     jmp_configure_columns    ;F78E: 7E F5 AB 
+        CMPB    #255                     ;F78A: C1 FF 
+        BNE     ZF791                    ;F78C: 26 03          RIGHT pressed, set tty
+        JMP     jmp_configure_columns    ;F78E: 7E F5 AB       LEFT pressed
 ZF791   JMP     jmp_configure_tty        ;F791: 7E F5 B1 
 
 configure_tty LDX     tty_config_ptr           ;F794: DE 63 
@@ -1131,38 +1134,38 @@ configure_tty LDX     tty_config_ptr           ;F794: DE 63
         JSR     get_key                  ;F79F: BD F7 FA 
         TSTB                             ;F7A2: 5D 
         BNE     ZF7A8                    ;F7A3: 26 03 
-        JMP     serial_init              ;F7A5: 7E F5 B4 
-ZF7A8   BPL     ZF7AD                    ;F7A8: 2A 03 
-        JMP     ZF7D6                    ;F7AA: 7E F7 D6 
+        JMP     serial_init              ;F7A5: 7E F5 B4       RETURN pressed, done with SET MODE operation
+ZF7A8   BPL     ZF7AD                    ;F7A8: 2A 03          UP or DOWN pressed, changing tty
+        JMP     ZF7D6                    ;F7AA: 7E F7 D6       LEFT or RIGHT pressed
 ZF7AD   TSTA                             ;F7AD: 4D 
-        BEQ     ZF7C7                    ;F7AE: 27 17 
+        BEQ     increment_tty            ;F7AE: 27 17          UP pressed
         LDX     tty_config_ptr           ;F7B0: DE 63 
         CPX     #tty_no                  ;F7B2: 8C FE 0D 
-        BEQ     ZF7BD                    ;F7B5: 27 06 
+        BEQ     save_tty                 ;F7B5: 27 06          already at minimum value
         DEX                              ;F7B7: 09 
         DEX                              ;F7B8: 09 
         DEX                              ;F7B9: 09 
         DEX                              ;F7BA: 09 
         DEX                              ;F7BB: 09 
         DEX                              ;F7BC: 09 
-ZF7BD   STX     tty_config_ptr           ;F7BD: DF 63 
+save_tty STX     tty_config_ptr           ;F7BD: DF 63 
         LDAB    $04,X                    ;F7BF: E6 04 
-        JSR     ZF655                    ;F7C1: BD F6 55 
+        JSR     print_parameter          ;F7C1: BD F6 55 
         JMP     configure_tty            ;F7C4: 7E F7 94 
-ZF7C7   LDX     tty_config_ptr           ;F7C7: DE 63 
+increment_tty LDX     tty_config_ptr           ;F7C7: DE 63 
         CPX     tty_max                  ;F7C9: BC FE 19 
-        BEQ     ZF7BD                    ;F7CC: 27 EF 
+        BEQ     save_tty                 ;F7CC: 27 EF          already at maximum value
         INX                              ;F7CE: 08 
         INX                              ;F7CF: 08 
         INX                              ;F7D0: 08 
         INX                              ;F7D1: 08 
         INX                              ;F7D2: 08 
         INX                              ;F7D3: 08 
-        BRA     ZF7BD                    ;F7D4: 20 E7 
+        BRA     save_tty                 ;F7D4: 20 E7 
 ZF7D6   JSR     ZF7F1                    ;F7D6: BD F7 F1 
-        CMPB    #$FF                     ;F7D9: C1 FF 
-        BNE     ZF7E0                    ;F7DB: 26 03 
-        JMP     jmp_configure_duplexing  ;F7DD: 7E F5 AE 
+        CMPB    #255                     ;F7D9: C1 FF 
+        BNE     ZF7E0                    ;F7DB: 26 03          RIGHT pressed
+        JMP     jmp_configure_duplexing  ;F7DD: 7E F5 AE       LEFT pressed
 ZF7E0   JMP     jmp_configure_tty        ;F7E0: 7E F5 B1 
 
 print_text LDAA    ,X                       ;F7E3: A6 00 

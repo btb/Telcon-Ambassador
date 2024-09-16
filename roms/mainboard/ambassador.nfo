@@ -474,21 +474,94 @@ bin f5f9
 
 comment f604
 label f604 configure_baud
+lcomment f615 RETURN pressed, done with SET MODE operation
+lcomment f618 UP or DOWN pressed, changing baud
+lcomment f61a LEFT or RIGHT pressed
+lcomment f61e UP pressed
+lcomment f625 already at minimum value
+label f62e save_baud
+label f638 increment_baud
+lcomment f63d already at maximum value
+dec f64c
+lcomment f64d RIGHT pressed, set parity
+lcomment f64f LEFT pressed
+
+
+comment f655
+comment f655 move the cursor to column B of the config line
+comment f655 and print the parameter value pointed to by X
+label f655 print_parameter
 
 comment f662
 label f662 configure_parity
+lcomment f673 RETURN pressed, done with SET MODE operation
+lcomment f676 UP or DOWN pressed, changing parity
+lcomment f678 LEFT or RIGHT pressed
+lcomment f67c UP pressed
+lcomment f683 already at minimum value
+label f689 save_parity
+label f693 increment_parity
+lcomment f698 already at maximum value
+dec f6a3
+lcomment f6a5 RIGHT pressed, set stop bits
+lcomment f6a7 LEFT pressed
+
 
 comment f6ad
 label f6ad configure_stop_bits
+lcomment f6be RETURN pressed, done with SET MODE operation
+lcomment f6c1 UP or DOWN pressed, changing stop bits
+lcomment f6c3 LEFT or RIGHT pressed
+lcomment f6c7 UP pressed
+lcomment f6ce already at minimum value
+label f6d4 save_stop_bits
+label f6de increment_stop_bits
+lcomment f6e3 already at maximum value
+dec f6ef
+lcomment f6f0 RIGHT pressed, set columns
+lcomment f6f2 LEFT pressed
 
 comment f6f8
 label f6f8 configure_columns
+lcomment f709 RETURN pressed, done with SET MODE operation
+lcomment f70c UP or DOWN pressed, changing stop bits
+lcomment f70e LEFT or RIGHT pressed
+lcomment f712 UP pressed
+lcomment f719 already at minimum value
+label f720 save_columns
+label f72a increment_columns
+lcomment f72f already at maximum value
+dec f73c
+lcomment f73d RIGHT pressed, set duplexing
+lcomment f73f LEFT pressed
 
 comment f745
 label f745 configure_duplexing
+lcomment f756 RETURN pressed, done with SET MODE operation
+lcomment f759 UP or DOWN pressed, changing duplexing
+lcomment f75b LEFT or RIGHT pressed
+lcomment f75f UP pressed
+lcomment f766 already at minimum value
+label f76e save_duplexing
+label f778 increment_duplexing
+lcomment f77d already at maximum value
+dec f78b
+lcomment f78c RIGHT pressed, set tty
+lcomment f78e LEFT pressed
 
 comment f794
 label f794 configure_tty
+lcomment f7a5 RETURN pressed, done with SET MODE operation
+lcomment f7a8 UP or DOWN pressed, changing tty
+lcomment f7aa LEFT or RIGHT pressed
+lcomment f7ae UP pressed
+lcomment f7b5 already at minimum value
+label f7bd save_tty
+label f7c7 increment_tty
+lcomment f7cc already at maximum value
+dec f7da
+lcomment f7db RIGHT pressed
+lcomment f7dd LEFT pressed
 
 comment f7e3
 label f7e3 print_text
