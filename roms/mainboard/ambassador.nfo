@@ -308,7 +308,7 @@ label f26a handle_received_character
 
 comment f287
 label f287 handle_keyboard_interrupt
-lcomment f28a command_nop
+lcomment f28a reset requested
 
 comment f29e
 label f29e handle_received_xoff
@@ -834,7 +834,7 @@ lcomment fd0a $92
 lcomment fd0c $93
 lcomment fd0e $94
 lcomment fd10 $95
-lcomment fd12 $96
+lcomment fd12 $96 - reset, handled in interrupt, so nothing else to do
 lcomment fd14 $97
 lcomment fd16 $98
 lcomment fd18 $99

@@ -421,7 +421,7 @@ ZF277   STX     read_buffer_head_ptr     ;F277: DF 42
 ZF286   RTI                              ;F286: 3B 
 
 handle_keyboard_interrupt LDAA    kbd_data_addr            ;F287: B6 B0 08 
-        CMPA    #$96                     ;F28A: 81 96          command_nop
+        CMPA    #$96                     ;F28A: 81 96          reset requested
         BEQ     soft_reset               ;F28C: 27 2E 
         LDX     key_buffer_head_ptr      ;F28E: DE 2B 
         STAA    ,X                       ;F290: A7 00 
@@ -1928,7 +1928,7 @@ copy_line_buffer_to_screen LDX     #screen_buffer           ;FCD9: CE 00 80
         FDB     do_command_print_enable  ;FD0C: FA 6B          $93
         FDB     do_command_print_disable ;FD0E: FA 7B          $94
         FDB     do_command_bell          ;FD10: FA A8          $95
-        FDB     do_command_nop           ;FD12: F4 7D          $96
+        FDB     do_command_nop           ;FD12: F4 7D          $96 - reset, handled in interrupt, so nothing else to do
         FDB     do_command_print_space   ;FD14: FA 9F          $97
         FDB     do_command_indicators_off ;FD16: FA B1          $98
         FDB     do_command_tab           ;FD18: F9 7E          $99

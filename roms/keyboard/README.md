@@ -127,7 +127,7 @@ The keyboard controller outputs a different scan code for each key combination, 
 |SHIFT|ESC|0E3|1b|^[, ESC, Escape|
 |SHIFT|PRINT<br/>XMIT|0E5|89|[print screen]|
 |CTRL|CLR<br/>SCRN|117|86|[clear screen]|
-|CTRL|*<br/>:|135|96|[reset?] [no-op?]|
+|CTRL|*<br/>:|135|96|[reset]|
 |CTRL|O|13B|0f|^O, SI, Shift In|
 |CTRL|P|13C|10|^P, DLE, Data Link Escape|
 |CTRL|L|13D|0c|^L, FF, Form Feed|
