@@ -474,7 +474,7 @@ soft_reset LDX     #key_buffer              ;F2BC: CE 08 00
         JSR     move_home                ;F2EA: BD F3 63 
         LDAA    preset_data              ;F2ED: B6 B0 0C       printer disabled?
         BPL     ZF2F5                    ;F2F0: 2A 03 
-        JSR     do_command_97            ;F2F2: BD FA 9F 
+        JSR     do_command_print_space   ;F2F2: BD FA 9F 
 ZF2F5   LDAA    #%00110111               ;F2F5: 86 37          RTS, error reset, Rx enable, DTR, Tx enable
         STAA    serial_control_addr      ;F2F7: B7 B0 05 
         LDAA    misc_port_data           ;F2FA: B6 B0 0E 
@@ -1545,7 +1545,7 @@ do_command_print_transmit JSR     do_command_transmit      ;FA99: BD F4 D8
         JMP     do_command_print         ;FA9C: 7E F9 98 
 
 ; CTRL+3 key pressed
-do_command_97 CLRA                             ;FA9F: 4F 
+do_command_print_space CLRA                             ;FA9F: 4F 
         JSR     print_character          ;FAA0: BD FA 14 
         LDX     cursor_position_ptr      ;FAA3: DE 2D 
         JMP     paint_cursor             ;FAA5: 7E F3 C8 
@@ -1557,7 +1557,7 @@ do_command_bell LDAA    #$07                     ;FAA8: 86 07          BEL - Bel
         RTS                              ;FAB0: 39 
 
 ; CTRL+4 key pressed
-do_command_98 LDAA    misc_data                ;FAB1: 96 69 
+do_command_indicators_off LDAA    misc_data                ;FAB1: 96 69 
 ; turn off bits for LED5 and LED6?
         ANDA    #%11111100               ;FAB3: 84 FC 
         STAA    misc_data                ;FAB5: 97 69 
@@ -1928,8 +1928,8 @@ copy_line_buffer_to_screen LDX     #screen_buffer           ;FCD9: CE 00 80
         FDB     do_command_print_disable ;FD0E: FA 7B          $94
         FDB     do_command_bell          ;FD10: FA A8          $95
         FDB     do_command_nop           ;FD12: F4 7D          $96
-        FDB     do_command_97            ;FD14: FA 9F          $97
-        FDB     do_command_98            ;FD16: FA B1          $98
+        FDB     do_command_print_space   ;FD14: FA 9F          $97
+        FDB     do_command_indicators_off ;FD16: FA B1          $98
         FDB     do_command_tab           ;FD18: F9 7E          $99
         FDB     do_command_backspace2    ;FD1A: F4 C5          $9a
         FDB     do_command_flow_control_enable ;FD1C: FA EB          $9b

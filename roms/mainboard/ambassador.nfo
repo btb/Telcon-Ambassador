@@ -672,7 +672,7 @@ label FA99 do_command_print_transmit
 
 comment fa9f
 comment fa9f CTRL+3 key pressed
-label FA9F do_command_97
+label FA9F do_command_print_space
 
 comment faa8
 comment faa8 BEL received
@@ -681,7 +681,7 @@ lcomment faa8 BEL - Bell, Alert
 
 comment fab1
 comment fab1 CTRL+4 key pressed
-label FAB1 do_command_98
+label FAB1 do_command_indicators_off
 comment fab3 turn off bits for LED5 and LED6?
 bin fab4
 
