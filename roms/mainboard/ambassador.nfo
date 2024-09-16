@@ -702,7 +702,7 @@ comment faeb CTRL+5 key pressed
 label FAEB do_command_flow_control_enable
 
 comment faf3
-comment CTRL+6 key pressed
+comment faf3 CTRL+6 key pressed
 label FAF3 do_command_flow_control_disable
 
 comment fafb

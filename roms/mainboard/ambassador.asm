@@ -1595,6 +1595,7 @@ do_command_flow_control_enable INC     >flow_control_mode       ;FAEB: 7C 00 78
         LDX     cursor_position_ptr      ;FAEE: DE 2D 
         JMP     paint_cursor             ;FAF0: 7E F3 C8 
 
+; CTRL+6 key pressed
 do_command_flow_control_disable CLR     >flow_control_mode       ;FAF3: 7F 00 78 
         LDX     cursor_position_ptr      ;FAF6: DE 2D 
         JMP     paint_cursor             ;FAF8: 7E F3 C8 
