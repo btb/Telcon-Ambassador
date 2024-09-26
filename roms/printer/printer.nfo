@@ -1,6 +1,7 @@
 file U2-80-C01.bin F800
 option 6800
 option noasc
+option nofcc
 
 label 0000 counter
 label 0001 char_gen_ptr

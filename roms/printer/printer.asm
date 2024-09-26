@@ -1,4 +1,4 @@
-; f9dasm: M6800/1/2/3/8/9 / H6309 Binary/OS9/FLEX9 Disassembler V1.80
+; f9dasm: M6800/1/2/3/8/9 / H6309 Binary/OS9/FLEX9 Disassembler V1.82
 ; Loaded binary file U2-80-C01.bin
 
 ;****************************************************
@@ -35,119 +35,135 @@ port_control EQU     $0083
 ; Character generator data. For each ASCII character N, from 21 to 5f,
 ; the five columns of pixels are at f800+N, f83f+N, f87e+N, f8bd+N, f8fc+N
 char_gen FCB     $7F,$7F                  ;F821: 7F 7F 
-        FCC     "k[\O"                   ;F823: 6B 5B 5C 4F 
+        FCB     $6B,$5B,$5C,$4F          ;F823: 6B 5B 5C 4F 
         FCB     $7F                      ;F827: 7F 
-        FCC     "c"                      ;F828: 63 
+        FCB     $63                      ;F828: 63 
         FCB     $7F                      ;F829: 7F 
-        FCC     "kw"                     ;F82A: 6B 77 
+        FCB     $6B,$77                  ;F82A: 6B 77 
         FCB     $7F                      ;F82C: 7F 
-        FCC     "w"                      ;F82D: 77 
+        FCB     $77                      ;F82D: 77 
         FCB     $7F,$1F                  ;F82E: 7F 1F 
-        FCC     "A"                      ;F830: 41 
+        FCB     $41                      ;F830: 41 
         FCB     $7F,$1D                  ;F831: 7F 1D 
-        FCC     "]gXC"                   ;F833: 5D 67 58 43 
+        FCB     $5D,$67,$58,$43          ;F833: 5D 67 58 43 
         FCB     $1E                      ;F837: 1E 
-        FCC     "Iy"                     ;F838: 49 79 
+        FCB     $49,$79                  ;F838: 49 79 
         FCB     $7F,$7F                  ;F83A: 7F 7F 
-        FCC     "w"                      ;F83C: 77 
+        FCB     $77                      ;F83C: 77 
         FCB     $7F,$7F                  ;F83D: 7F 7F 
-        FCC     "}A"                     ;F83F: 7D 41 
+        FCB     $7D,$41                  ;F83F: 7D 41 
         FCB     $01,$00                  ;F841: 01 00 
-        FCC     "A>"                     ;F843: 41 3E 
+        FCB     $41,$3E                  ;F843: 41 3E 
         FCB     $00,$00                  ;F845: 00 00 
-        FCC     "A"                      ;F847: 41 
+        FCB     $41                      ;F847: 41 
         FCB     $00,$7F                  ;F848: 00 7F 
-        FCC     "_"                      ;F84A: 5F 
+        FCB     $5F                      ;F84A: 5F 
         FCB     $00,$00,$00,$00          ;F84B: 00 00 00 00 
-        FCC     "A"                      ;F84F: 41 
+        FCB     $41                      ;F84F: 41 
         FCB     $00                      ;F850: 00 
-        FCC     "A"                      ;F851: 41 
+        FCB     $41                      ;F851: 41 
         FCB     $00                      ;F852: 00 
-        FCC     "9~@`"                   ;F853: 39 7E 40 60 
+        FCB     $39,$7E,$40,$60          ;F853: 39 7E 40 60 
         FCB     $00,$1C                  ;F857: 00 1C 
-        FCC     "x"                      ;F859: 78 
+        FCB     $78                      ;F859: 78 
         FCB     $1E,$7F,$1F,$7F          ;F85A: 1E 7F 1F 7F 
-        FCC     "{w"                     ;F85E: 7B 77 
+        FCB     $7B,$77                  ;F85E: 7B 77 
         FCB     $7F                      ;F860: 7F 
-        FCC     "x"                      ;F861: 78 
+        FCB     $78                      ;F861: 78 
         FCB     $00                      ;F862: 00 
-        FCC     "Ul1"                    ;F863: 55 6C 31 
+        FCB     $55,$6C,$31              ;F863: 55 6C 31 
         FCB     $7F                      ;F866: 7F 
-        FCC     "\"                      ;F867: 5C 
+        FCB     $5C                      ;F867: 5C 
         FCB     $7F                      ;F868: 7F 
-        FCC     "ww'w"                   ;F869: 77 77 27 77 
+        FCB     $77,$77,$27,$77          ;F869: 77 77 27 77 
         FCB     $1F                      ;F86D: 1F 
-        FCC     "o.=.>k:5n66I$kk>~>v6>"  ;F86E: 6F 2E 3D 2E 3E 6B 3A 35 6E 36 36 49 24 6B 6B 3E 7E 3E 76 36 3E 
+        FCB     $6F,$2E,$3D,$2E,$3E,$6B  ;F86E: 6F 2E 3D 2E 3E 6B 
+        FCB     $3A,$35,$6E,$36,$36,$49  ;F874: 3A 35 6E 36 36 49 
+        FCB     $24,$6B,$6B,$3E,$7E,$3E  ;F87A: 24 6B 6B 3E 7E 3E 
+        FCB     $76,$36,$3E              ;F880: 76 36 3E 
         FCB     $00                      ;F883: 00 
-        FCC     "6v>w>?w?}y>v>v6~?__kw"  ;F884: 36 76 3E 77 3E 3F 77 3F 7D 79 3E 76 3E 76 36 7E 3F 5F 5F 6B 77 
-        FCC     "."                      ;F899: 2E 
+        FCB     $36,$76,$3E,$77,$3E,$3F  ;F884: 36 76 3E 77 3E 3F 
+        FCB     $77,$3F,$7D,$79,$3E,$76  ;F88A: 77 3F 7D 79 3E 76 
+        FCB     $3E,$76,$36,$7E,$3F,$5F  ;F890: 3E 76 36 7E 3F 5F 
+        FCB     $5F,$6B,$77,$2E          ;F896: 5F 6B 77 2E 
         FCB     $00                      ;F89A: 00 
-        FCC     "o>}w "                  ;F89B: 6F 3E 7D 77 20 
+        FCB     $6F,$3E,$7D,$77,$20      ;F89B: 6F 3E 7D 77 20 
         FCB     $7F                      ;F8A0: 7F 
-        FCC     "k"                      ;F8A1: 6B 
+        FCB     $6B                      ;F8A1: 6B 
         FCB     $00                      ;F8A2: 00 
-        FCC     "w"                      ;F8A3: 77 
+        FCB     $77                      ;F8A3: 77 
         FCB     $26                      ;F8A4: 26 
-        FCC     "t>>AAGw"                ;F8A5: 74 3E 3E 41 41 47 77 
+        FCB     $74,$3E,$3E,$41,$41,$47  ;F8A5: 74 3E 3E 41 41 47 
+        FCB     $77                      ;F8AB: 77 
         FCB     $1F                      ;F8AC: 1F 
-        FCC     "w6"                     ;F8AD: 77 36 
+        FCB     $77,$36                  ;F8AD: 77 36 
         FCB     $00                      ;F8AF: 00 
-        FCC     "66m:6v66ID]k]."         ;F8B0: 36 36 6D 3A 36 76 36 36 49 44 5D 6B 5D 2E 
+        FCB     $36,$36,$6D,$3A,$36,$76  ;F8B0: 36 36 6D 3A 36 76 
+        FCB     $36,$36,$49,$44,$5D,$6B  ;F8B6: 36 36 49 44 5D 6B 
+        FCB     $5D,$2E                  ;F8BC: 5D 2E 
         FCB     $22                      ;F8BE: 22 
-        FCC     "v6>>6v>w"               ;F8BF: 76 36 3E 3E 36 76 3E 77 
+        FCB     $76,$36,$3E,$3E,$36,$76  ;F8BF: 76 36 3E 3E 36 76 
+        FCB     $3E,$77                  ;F8C5: 3E 77 
         FCB     $00                      ;F8C7: 00 
-        FCC     ">k?sw>v.f6"             ;F8C8: 3E 6B 3F 73 77 3E 76 2E 66 36 
+        FCB     $3E,$6B,$3F,$73,$77,$3E  ;F8C8: 3E 6B 3F 73 77 3E 
+        FCB     $76,$2E,$66,$36          ;F8CE: 76 2E 66 36 
         FCB     $00                      ;F8D2: 00 
-        FCC     "??gw"                   ;F8D3: 3F 3F 67 77 
+        FCB     $3F,$3F,$67,$77          ;F8D3: 3F 3F 67 77 
         FCB     $0F                      ;F8D7: 0F 
-        FCC     "6>w>"                   ;F8D8: 36 3E 77 3E 
+        FCB     $36,$3E,$77,$3E          ;F8D8: 36 3E 77 3E 
         FCB     $00                      ;F8DC: 00 
-        FCC     "w"                      ;F8DD: 77 
+        FCB     $77                      ;F8DD: 77 
         FCB     $7F                      ;F8DE: 7F 
-        FCC     "x"                      ;F8DF: 78 
+        FCB     $78                      ;F8DF: 78 
         FCB     $00                      ;F8E0: 00 
-        FCC     "U"                      ;F8E1: 55 
+        FCB     $55                      ;F8E1: 55 
         FCB     $1B                      ;F8E2: 1B 
-        FCC     "Yx"                     ;F8E3: 59 78 
+        FCB     $59,$78                  ;F8E3: 59 78 
         FCB     $7F                      ;F8E5: 7F 
-        FCC     "\ww"                    ;F8E6: 5C 77 77 
+        FCB     $5C,$77,$77              ;F8E6: 5C 77 77 
         FCB     $7F                      ;F8E9: 7F 
-        FCC     "w"                      ;F8EA: 77 
+        FCB     $77                      ;F8EA: 77 
         FCB     $7F                      ;F8EB: 7F 
-        FCC     "{:?66"                  ;F8EC: 7B 3A 3F 36 36 
+        FCB     $7B,$3A,$3F,$36,$36      ;F8EC: 7B 3A 3F 36 36 
         FCB     $00                      ;F8F1: 00 
-        FCC     ":6z6V"                  ;F8F2: 3A 36 7A 36 56 
+        FCB     $3A,$36,$7A,$36,$56      ;F8F2: 3A 36 7A 36 56 
         FCB     $7F,$7F                  ;F8F7: 7F 7F 
-        FCC     ">kkv*v6>]>~.w>@]?}O>v"  ;F8F9: 3E 6B 6B 76 2A 76 36 3E 5D 3E 7E 2E 77 3E 40 5D 3F 7D 4F 3E 76 
-        FCC     "^V6~?__kw:>{"           ;F90E: 5E 56 36 7E 3F 5F 5F 6B 77 3A 3E 7B 
+        FCB     $3E,$6B,$6B,$76,$2A,$76  ;F8F9: 3E 6B 6B 76 2A 76 
+        FCB     $36,$3E,$5D,$3E,$7E,$2E  ;F8FF: 36 3E 5D 3E 7E 2E 
+        FCB     $77,$3E,$40,$5D,$3F,$7D  ;F905: 77 3E 40 5D 3F 7D 
+        FCB     $4F,$3E,$76,$5E,$56,$36  ;F90B: 4F 3E 76 5E 56 36 
+        FCB     $7E,$3F,$5F,$5F,$6B,$77  ;F911: 7E 3F 5F 5F 6B 77 
+        FCB     $3A,$3E,$7B              ;F917: 3A 3E 7B 
         FCB     $00                      ;F91A: 00 
-        FCC     "}w"                     ;F91B: 7D 77 
+        FCB     $7D,$77                  ;F91B: 7D 77 
         FCB     $7F,$7F                  ;F91D: 7F 7F 
-        FCC     "km"                     ;F91F: 6B 6D 
+        FCB     $6B,$6D                  ;F91F: 6B 6D 
         FCB     $1D                      ;F921: 1D 
-        FCC     "/"                      ;F922: 2F 
+        FCB     $2F                      ;F922: 2F 
         FCB     $7F,$7F                  ;F923: 7F 7F 
-        FCC     "ckw"                    ;F925: 63 6B 77 
+        FCB     $63,$6B,$77              ;F925: 63 6B 77 
         FCB     $7F                      ;F928: 7F 
-        FCC     "w"                      ;F929: 77 
+        FCB     $77                      ;F929: 77 
         FCB     $7F                      ;F92A: 7F 
-        FCC     "|A"                     ;F92B: 7C 41 
+        FCB     $7C,$41                  ;F92B: 7C 41 
         FCB     $7F                      ;F92D: 7F 
-        FCC     "9IoFO|Ia"               ;F92E: 39 49 6F 46 4F 7C 49 61 
+        FCB     $39,$49,$6F,$46,$4F,$7C  ;F92E: 39 49 6F 46 4F 7C 
+        FCB     $49,$61                  ;F934: 49 61 
         FCB     $7F,$7F,$7F,$7F          ;F936: 7F 7F 7F 7F 
-        FCC     "wya"                    ;F93A: 77 79 61 
+        FCB     $77,$79,$61              ;F93A: 77 79 61 
         FCB     $01                      ;F93D: 01 
-        FCC     "I]c>~M"                 ;F93E: 49 5D 63 3E 7E 4D 
+        FCB     $49,$5D,$63,$3E,$7E,$4D  ;F93E: 49 5D 63 3E 7E 4D 
         FCB     $00,$7F                  ;F944: 00 7F 
-        FCC     "~>?"                    ;F946: 7E 3E 3F 
+        FCB     $7E,$3E,$3F              ;F946: 7E 3E 3F 
         FCB     $00,$00                  ;F949: 00 00 
-        FCC     "Ay!9N~@`"               ;F94B: 41 79 21 39 4E 7E 40 60 
+        FCB     $41,$79,$21,$39,$4E,$7E  ;F94B: 41 79 21 39 4E 7E 
+        FCB     $40,$60                  ;F951: 40 60 
         FCB     $00,$1C                  ;F953: 00 1C 
-        FCC     "x<"                     ;F955: 78 3C 
+        FCB     $78,$3C                  ;F955: 78 3C 
         FCB     $7F                      ;F957: 7F 
-        FCC     "|"                      ;F958: 7C 
+        FCB     $7C                      ;F958: 7C 
         FCB     $7F                      ;F959: 7F 
-        FCC     "{w"                     ;F95A: 7B 77 
+        FCB     $7B,$77                  ;F95A: 7B 77 
 
 ; unused space
         FCB     $FF,$FF,$FF,$FF,$FF,$FF  ;F95C: FF FF FF FF FF FF 
