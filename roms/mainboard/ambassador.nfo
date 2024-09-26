@@ -4,16 +4,11 @@ option 6800
 option noasc
 option noflex
 
+comment 0000 RAM addresses
 label 0000 null_ptr
 
 label 0027 stack_top
 lcomment 0027 top of stack
-
-label 07B0 last_line_ptr
-lcomment 07B0 address of start of last line of SCREEN
-
-label 07FF screen_max_ptr
-lcomment 07FF last address of SCREEN
 
 label 0028 duplexing_mode
 lcomment 0028 char: duplexing control byte. PAG=1, HDX=0, FDX=-1
@@ -30,12 +25,12 @@ lcomment 002D word: cursor position
 label 002F serial_mode
 lcomment 002F char: control byte for setting USART serial mode
 
-label 0030 temp_char
-lcomment 0030 char: for temporarily saving character
+label 0030 temp_str_ptr
+lcomment 0030 char \*: for temporarily saving position in string
 
 label 0032 baud_gen_ptr
 lcomment 0032 struct void \*: pointer to baud generator set address
-label 0033 baud_gen_ptr+1 * lower byte of pointer
+label 0033 baud_gen_ptr+1
 
 label 0034 current_row_end_ptr
 lcomment 0034 char \*: pointer to end of current row
@@ -77,18 +72,28 @@ lcomment 0048 char: highest column that can be displayed
 label 0049 key_buffer_tail_ptr
 lcomment 0049 char \*: pointer to tail of keyboard buffer FIFO
 
-lcomment 004B char \*: temp pointer
+label 004b screen_ptr
+lcomment 004b char \*: pointer to position in screen_buffer
+label 004c screen_ptr+1
+label 004d row_number
+label 004f temp_ptr
 lcomment 004F void \*: temp pointer
+label 0050 temp_ptr+1
+lcomment 0050 low byte of temp_ptr
 
 label 0053 stack_ptr_save
 lcomment 0053 void \*: for temporarily saving the location of the stack pointer
 label 0055 last_char_ptr
 lcomment 0055 char \*: pointer to last non-space character in screen buffer
-lcomment 0057 word:
-label 0059 source_ptr
-lcomment 0059 char \*: source parameter for copy operations
+label 0057 line_start_ptr
+lcomment 0057 char \*: pointer to first character in line
+label 0058 line_start_ptr+1
+label 0059 temp_buf_ptr
+lcomment 0059 char \*: for temporarily storing pointer to part of screen buffer
 label 005B dest_ptr
 lcomment 005B char \*: destination parameter for copy operations
+label 005c dest_ptr+1
+label 005d param_text
 lcomment 005D void \*: for temporarily storing pointer to current config item
 label 005F print_enabled
 lcomment 005F char: printing enabled. set by DC2, cleared by DC4
@@ -141,20 +146,30 @@ label 007a show_cursor
 lcomment 007a char: clear for no invert, $80 for invert
 
 label 0080 screen_buffer
-lcomment 0080 char[80x24]: the screen buffer
+lcomment 0080 char[80\*24]: the screen buffer
+label 07b0 screen_buffer+1840
+#label 07ff screen_buffer_end
+label 07ff screen_buffer+1919
+lcomment 07ff last address of screen_buffer
 
 label 0800 key_buffer
 lcomment 0800 char[34?]: keyboard buffer FIFO
+label 0822 key_buffer+34
 
 label 0823 tab_stop_array
 lcomment 0823 char[10]: tab stops
 label 082C tab_stop_array+9
+label 082d tab_stop_array+10
 
 label 082E receive_buffer
 lcomment 082E char[768]: received data buffer
+label 0b2d receive_buffer+767
 
 label 0B30 line_buffer
 lcomment 0B30 char[80]: buffer for current(?) line
+
+label 0bff memory_end
+lcomment 0bff Last byte of our RAM
 
 comment 8000
 comment 8000 I/O addresses
@@ -190,7 +205,7 @@ lcomment B00F char: speaker, ind4, ind5, ind6 control
 comment f000 RESET handler
 comment f000 set stack pointer to $27
 comment f003 clear registers
-comment f008 clear memory from 0 to mem_max  (0BFFh)
+comment f008 clear all the memory
 comment f017 disable interrupts
 comment f018 enable interrupt on low-going KBINT, enable keyboard port
 bin f019
@@ -224,6 +239,7 @@ bin f091
 comment f099 set columns config to 80
 
 comment f0bb
+comment f0bb The main loop
 label f0bb main
 dec f0be
 comment f0c4 check read buffer
@@ -272,6 +288,7 @@ label f1c8 transmit_character
 comment f1cd
 label f1cd send_serial_byte
 lcomment f1d7 not TTY
+lcomment f1e1 in TTY mode, make characters uppercase
 
 comment f1e7
 label f1e7 add_character_to_screen
@@ -297,7 +314,8 @@ bin f246
 lcomment f249 RTS, error reset, Rx enable, DTR, Tx enable
 bin f24a
 lcomment f24e chomp invalid byte
-lcomment f251 "?"
+lcomment f251 replace it with a "?"
+char f252
 label f255 handle_received_valid_byte
 lcomment f258 strip high bit
 lcomment f25a DC1 - XON
@@ -338,7 +356,7 @@ label f307 screen_strip_hibits
 
 comment f31e
 comment f31e CTRL+CLEAR SCRN key pressed
-label F31E do_command_clear
+label f31e cmd_clear
 
 comment f326
 comment f326 Control Function - Erase In Display
@@ -354,32 +372,36 @@ dec f351
 
 comment f35d
 comment f35d HOME key pressed
-label F35D do_command_home
+label f35d cmd_home
 label f363 move_home
 
 comment f36b
 comment f36b RIGHT key pressed
-label F36B do_command_right
+label f36b cmd_right
 comment f371 CUF received
 label f371 do_cursor_forward
 
 comment f383
 comment f383 DOWN key pressed
-label F383 do_command_down
+label f383 cmd_down
 comment f389 CUD received
 label f389 do_cursor_down
+dec f38f
+dec f393
 
 comment f39a
 comment f39a LEFT key pressed
-label F39A do_command_left
+label f39a cmd_left
 comment f3a0 CUB received
 label f3a0 do_cursor_backward
 
 comment f3b1
 comment f3b1 UP key pressed
-label F3B1 do_command_up
+label f3b1 cmd_up
 comment f3b7 CUU received
 label f3b7 do_cursor_up
+dec f3bd
+dec f3c1
 
 comment f3c8
 comment f3c8 make X the current cursor position.
@@ -400,6 +422,7 @@ label f3fe scroll_screen_sub
 comment f43a
 label f43a scroll_screen
 dec f43b
+lcomment f43f last line of screen_buffer
 dec f446
 
 comment f44f
@@ -411,15 +434,18 @@ lcomment f451 SP - Space
 comment f45a
 label f45a handle_command_code
 comment f461 use A to calculate offset into array at FCE6, jump to address found there
+lcomment f464 cmdvecs & 0xff
+lcomment f466 cmdvecs >> 8
 
 comment f47d
 comment f47d SHIFT+CTRL+D key pressed
-comment f47d CTRL+: key pressed
-label F47D do_command_nop
+comment f47d do nothing, just return
+label f47d cmd_nop
 
 comment f47e
 comment f47e BREAK key pressed
-label F47E do_command_break
+comment f47e toggle transmission of BREAK on or off
+label f47e cmd_break
 dec f486
 lcomment f48b RTS, error reset, Rx enable, DTR, Tx enable
 bin f48c
@@ -428,38 +454,63 @@ bin f492
 
 comment f497
 comment f497 RETURN key pressed
-label F497 do_command_return
+comment f497 In page mode, just move to next line
+comment f497 In half or full duplex, also transmit CR
+comment f497 In full duplex, also update the cursor
+label f497 cmd_return
 lcomment f49a PAG
 lcomment f49c CR - Carriage Return
 lcomment f4a4 HDX
 
 comment f4b1
 comment f4b1 BACK SPACE key pressed
-label F4B1 do_command_backspace
+comment f4c5 In page mode, just delete the character and move the cursor
+comment f4c5 In half or full duplex, also transmit BS
+comment f4c5 In full duplex, also update the cursor
+label f4b1 cmd_backspace
 lcomment f4b4 PAG
 lcomment f4b6 BS - Backspace
 lcomment f4be HDX
 
 comment f4c5
 comment f4c5 BS received
-label F4C5 do_command_backspace2
+comment f4c5 Delete character and move the cursor
+label f4c5 cmd_backspace2
 
 comment f4d8
 comment f4d8 PRINT XMIT key pressed
-label F4D8 do_command_transmit
+comment f4d8 In half or full duplex, do nothing
+comment f4d8 In page mode, send screen text out
+label f4d8 cmd_transmit
 lcomment f4db PAG
+dec f515
 
 comment f51f
+comment f51f Send out CR and LF
 label f51f transmit_CR_LF
 
+comment f52a
+comment f52a Find last non-blank character in line
+label f52a line_find_last_char
+
 comment f546
+comment f546 Find last non-blank character on screen
 label f546 screen_find_last_char
+const f561
 
 comment f564
 comment f564 SET MODE key pressed
-label F564 do_command_set_mode
-const f561
-
+comment f564 Interactively configure the terminal
+label f564 cmd_set_mode
+dec f566
+lcomment f569 save the text under the config line
+lcomment f572 print the config line and all the values
+lcomment f57a baud_config_ptr->offset
+lcomment f581 parity_config_ptr->offset
+lcomment f588 stop_bits_config_ptr->offset
+lcomment f58f columns_config_ptr->offset
+lcomment f596 duplexing_config_ptr->offset
+lcomment f59d tty_config_ptr->offset
 label f5a2 jmp_configure_baud
 label f5a5 jmp_configure_parity
 label f5a8 jmp_configure_stop_bits
@@ -468,18 +519,27 @@ label f5ae jmp_configure_duplexing
 label f5b1 jmp_configure_tty
 
 comment f5b4
+comment f5b4 Apply settings to baud generator, USART, etc
 label f5b4 serial_init
+lcomment f5b6 baud_config_ptr->value
+lcomment f5c0 parity_config_ptr->value
+lcomment f5c4 stop_bits_config_ptr->value
+lcomment f5ca columns_config_ptr->value
+lcomment f5d0 duplexing_config_ptr->value
+lcomment f5d6 tty_config_ptr->value
 lcomment f5f8 RTS, error reset, Rx enable, DTR, Tx enable
 bin f5f9
 
 comment f604
 label f604 configure_baud
+lcomment f606 baud_config_ptr->offset
 lcomment f615 RETURN pressed, done with SET MODE operation
 lcomment f618 UP or DOWN pressed, changing baud
 lcomment f61a LEFT or RIGHT pressed
 lcomment f61e UP pressed
 lcomment f625 already at minimum value
 label f62e save_baud
+lcomment f630 baud_config_ptr->offset
 label f638 increment_baud
 lcomment f63d already at maximum value
 dec f64c
@@ -494,12 +554,14 @@ label f655 print_parameter
 
 comment f662
 label f662 configure_parity
+lcomment f664 parity_config_ptr->offset
 lcomment f673 RETURN pressed, done with SET MODE operation
 lcomment f676 UP or DOWN pressed, changing parity
 lcomment f678 LEFT or RIGHT pressed
 lcomment f67c UP pressed
 lcomment f683 already at minimum value
 label f689 save_parity
+lcomment f68b parity_config_ptr->offset
 label f693 increment_parity
 lcomment f698 already at maximum value
 dec f6a3
@@ -509,12 +571,14 @@ lcomment f6a7 LEFT pressed
 
 comment f6ad
 label f6ad configure_stop_bits
+lcomment f6af stop_bits_config_ptr->offset
 lcomment f6be RETURN pressed, done with SET MODE operation
 lcomment f6c1 UP or DOWN pressed, changing stop bits
 lcomment f6c3 LEFT or RIGHT pressed
 lcomment f6c7 UP pressed
 lcomment f6ce already at minimum value
 label f6d4 save_stop_bits
+lcomment f6d6 stop_bits_config_ptr->offset
 label f6de increment_stop_bits
 lcomment f6e3 already at maximum value
 dec f6ef
@@ -523,12 +587,14 @@ lcomment f6f2 LEFT pressed
 
 comment f6f8
 label f6f8 configure_columns
+lcomment f6fa columns_config_ptr->offset
 lcomment f709 RETURN pressed, done with SET MODE operation
 lcomment f70c UP or DOWN pressed, changing stop bits
 lcomment f70e LEFT or RIGHT pressed
 lcomment f712 UP pressed
 lcomment f719 already at minimum value
 label f720 save_columns
+lcomment f722 columns_config_ptr->offset
 label f72a increment_columns
 lcomment f72f already at maximum value
 dec f73c
@@ -537,12 +603,14 @@ lcomment f73f LEFT pressed
 
 comment f745
 label f745 configure_duplexing
+lcomment f747 duplexing_config_ptr->offset
 lcomment f756 RETURN pressed, done with SET MODE operation
 lcomment f759 UP or DOWN pressed, changing duplexing
 lcomment f75b LEFT or RIGHT pressed
 lcomment f75f UP pressed
 lcomment f766 already at minimum value
 label f76e save_duplexing
+lcomment f770 duplexing_config_ptr->offset
 label f778 increment_duplexing
 lcomment f77d already at maximum value
 dec f78b
@@ -551,12 +619,14 @@ lcomment f78e LEFT pressed
 
 comment f794
 label f794 configure_tty
+lcomment f796 tty_config_ptr->offset
 lcomment f7a5 RETURN pressed, done with SET MODE operation
 lcomment f7a8 UP or DOWN pressed, changing tty
 lcomment f7aa LEFT or RIGHT pressed
 lcomment f7ae UP pressed
 lcomment f7b5 already at minimum value
 label f7bd save_tty
+lcomment f7bf tty_config_ptr->offset
 label f7c7 increment_tty
 lcomment f7cc already at maximum value
 dec f7da
@@ -590,41 +660,78 @@ dec f838
 
 comment f83b
 comment f83b CTRL+ESC key pressed
-label F83B do_command_edit_tabs
+comment f83b Interactively edit tab stops
+label f83b cmd_edit_tabs
 dec f841
+lcomment f844 save the text under the config line
+lcomment f84a print the tab ruler (4 times)
 dec f84b
+lcomment f85a print the current tab stops
+lcomment f85f no more tab stops
+lcomment f867 print tab stop as a "shade" block
+label f876 edit_tabs_loop
+lcomment f87a UP, DOWN, LEFT, or RIGHT pressed
+lcomment f87c RETURN pressed
+lcomment f87f UP or DOWN pressed
+lcomment f881 LEFT or RIGHT pressed, clear inverted character bit
+lcomment f88b LEFT pressed
+lcomment f898 DOWN pressed
+lcomment f89a UP pressed
+lcomment f8a1 tab stop array is full, can't add
+lcomment f8a8 can't add tab stop at column 0
+lcomment f8b0 print tab stop as an inverted "shade" block
+label f8b7 edit_tabs_down
+lcomment f8c0 no tab stop here
+lcomment f8c4 this is the tab stop we're looking for
+lcomment f8cc no tab stop found for this column
+lcomment f8d4 redraw correct charactor in the ruler
 dec f8d5
-lcomment f87a return pressed
-lcomment f87f up or down pressed
-lcomment f88b left pressed
-lcomment f898 down pressed
+lcomment f8d8 inverse "1"
+dec f8db
+lcomment f8de inverse "6"
+dec f8e1
+lcomment f8e4 inverse "-"
+
+comment f8ed
+comment f8ed restore the cursor position and the screen under the tab ruler
+label f8ed edit_tabs_done
 
 comment f8fd
+comment f8fd Add a new tab stop at current_column
 label f8fd add_tab_stop
+lcomment f904 found an empty slot
+lcomment f907 already a tab stop in this column
+lcomment f90b insert it here
+lcomment f90d now we have to re-insert the tab stop that was here before
 
 comment f918
-label f918 tab_cursor_left
+label f918 edit_tabs_left
 
 comment f924
-label f924 tab_cursor_right
+label f924 edit_tabs_right
 
 comment f932
 label f932 delete_tab_stop
 
 comment f949
-label F949 do_command_horizontal_tab
+label f949 cmd_horizontal_tab
+lcomment f950 no tab stops, just add a space
+dec f976
 
 comment f97e
 comment f97e CTRL+I key pressed
-label F97E do_command_tab
+label f97e cmd_tab
 lcomment f981 HDX or FDX
 lcomment f986 HT - Horizontal Tab
 lcomment f98e PAG
 
 comment f998
 comment f998 SHIFT+PRINT XMIT key pressed
-label F998 do_command_print
+label f998 cmd_print
 lcomment f998 printer enabled?
+dec f9be
+dec f9c9
+dec f9fd
 
 comment fa14
 label fa14 print_character
@@ -644,22 +751,23 @@ bin fa43
 
 comment fa50
 comment fa50 CR received
-label FA50 do_command_carriage_return
+label fa50 cmd_carriage_return
 
 comment fa59
 comment fa59 LF received
-label FA59 do_command_line_feed
+label fa59 cmd_line_feed
+dec fa5f
 
 comment fa6b
 comment fa6b DC2 received
 comment fa6b CTRL+1 key pressed
-label FA6B do_command_print_enable
+label fA6b cmd_print_enable
 lcomment fa6b printer disabled?
 
 comment fa7b
 comment fa7b DC4 received
 comment fa7b CTRL+2 key pressed
-label FA7B do_command_print_disable
+label fa7b cmd_print_disable
 lcomment fa7b printer disabled?
 
 comment fa8b
@@ -668,20 +776,20 @@ label fa8b print_nulls
 
 comment fa99
 comment fa99 CTRL+PRINT XMIT key pressed
-label FA99 do_command_print_transmit
+label fa99 cmd_print_transmit
 
 comment fa9f
 comment fa9f CTRL+3 key pressed
-label FA9F do_command_print_space
+label fa9f cmd_print_space
 
 comment faa8
 comment faa8 BEL received
-label FAA8 do_command_bell
+label faa8 cmd_bell
 lcomment faa8 BEL - Bell, Alert
 
 comment fab1
 comment fab1 CTRL+4 key pressed
-label FAB1 do_command_indicators_off
+label fab1 cmd_indicators_off
 comment fab3 turn off bits for LED5 and LED6?
 bin fab4
 
@@ -699,17 +807,18 @@ bin fae8
 
 comment faeb
 comment faeb CTRL+5 key pressed
-label FAEB do_command_flow_control_enable
+label faeb cmd_flow_control_enable
 
 comment faf3
 comment faf3 CTRL+6 key pressed
-label FAF3 do_command_flow_control_disable
+label faf3 cmd_flow_control_disable
 
 comment fafb
 label fafb handle_received_escape_sequence
 lcomment fb12 received a second escape?
 lcomment fb24 received CAN - Cancel sequence
 lcomment fb28 received "[" - Control Sequence Indicator
+char fb29
 
 data fb81-fba6
 comment fb81
@@ -760,6 +869,7 @@ label fc04 cs_CUB
 comment fc1a
 comment fc1a Control Function - Cursor Position (same as HVP – Horizontal and Vertical Position)
 label fc1a cs_CUP
+dec fc20
 
 comment fc3e
 comment fc3e Control Function – Tabulation Clear
@@ -798,9 +908,10 @@ dec fca8
 dec fcb6
 
 comment fcbd
-comment fcbd copy line from screen to LNBUF
+comment fcbd copy line from screen to line_buffer
 label fcbd copy_screen_to_line_buffer
-comment fcc7 copy B chars from X to DEST 
+dec fcc6
+comment fcc7 copy B chars from X to dest_ptr
 label fcc7 copy_line
 
 comment fcd9 
@@ -811,6 +922,7 @@ dec fcdf
 comment fce6
 comment fce6 Array of command addresses used by handle_command_code (and handle_received_command_code).
 comment fce6 Command codes begin at $80 and are generated by the keyboard or a received command.
+label fce6 cmdvecs
 cvec fce6-fd1f
 lcomment fce6 $80 - never used, just a placeholder
 lcomment fce8 $81 - down arrow pressed
@@ -843,14 +955,16 @@ lcomment fd1c $9b - CTRL+5 pressed
 lcomment fd1e $9c - CTRL+6 pressed
 
 comment fd20
-word fd20-fd27
-label fd20 key_buffer_max
-label fd22 receive_buffer_max
-label fd24 tab_array_end
+comment fd20 Some constant pointers
+dvec fd20-fd27
+label fd20 key_buffer_34
+label fd22 receive_buffer_767
+label fd24 tab_stop_array_10
 lcomment fd24 end of tab stop array
-label fd26 mem_max
+label fd26 memory_end_ptr
 
 comment fd28
+comment fd28 Some word-size constants
 word fd28-fd2d
 label fd28 receive_buffer_fill_medium
 lcomment fd28 668 bytes
@@ -873,13 +987,29 @@ comment fd82       char offset;    // offset into config_text
 comment fd82       char value;     // bits to set on ABCD pins of MM5307 chip, in reverse order
 comment fd82 }
 label fd82 baud_110
+dec fd87
+bin fd88
 label fd89 baud_150
+dec fd8e
+bin fd8f
 label fd90 baud_300
+dec fd95
+bin fd96
 label fd97 baud_600
+dec fd9c
+bin fd9d
 label fd9e baud_1200
+dec fda3
+bin fda4
 label fda5 baud_2400
+dec fdaa
+bin fdab
 label fdac baud_4800
+dec fdb1
+bin fdb2
 label fdb3 baud_9600
+dec fdb8
+bin fdb9
 label fdba baud_max
 dvec fdba
 
@@ -891,10 +1021,16 @@ comment fdbc       char value;     // bits for sending to the USART
 comment fdbc }
 lcomment fdbc even parity, 7 bits, 16xBRF
 label fdbc parity_even_7
+dec fdbe
+bin fdbf
 lcomment fdc0 odd parity, 7 bits, 16xBRF
 label fdc0 parity_odd_7
+dec fdc2
+bin fdc3
 lcomment fdc4 no parity, 8 bits, 16xBRF
 label fdc4 parity_none_8
+dec fdc6
+bin fdc7
 label fdc8 parity_max
 dvec fdc8
 
@@ -906,8 +1042,12 @@ comment fdca       char value;     // bits for sending to the USART
 comment fdca }
 lcomment fdca 1 stop bit
 label fdca stop_bits_1
+dec fdcc
+bin fdcd
 lcomment fdce 2 stop bits
 label fdce stop_bits_2
+dec fdd0
+bin fdd1
 label fdd2 stop_bits_max
 dvec fdd2
 
@@ -918,12 +1058,26 @@ comment fdd4       char offset;    // offset into config_text
 comment fdd4       char value;     // # of columns - 1
 comment fdd4 }
 label fdd4 columns_40
+dec fdd7
+lcomment fdd7 f9dasm bug? should show as 33
 label fdd9 columns_48
+dec fddc
+lcomment fddc f9dasm bug? should show as 33
 label fdde columns_56
+dec fde1
+lcomment fde1 f9dasm bug? should show as 33
 label fde3 columns_64
+dec fde6
+lcomment fde6 f9dasm bug? should show as 33
 label fde8 columns_69
+dec fdeb
+lcomment fdeb f9dasm bug? should show as 33
 label fded columns_72
+dec fdf0
+lcomment fdf0 f9dasm bug? should show as 33
 label fdf2 columns_80
+dec fdf5
+lcomment fdf5 f9dasm bug? should show as 33
 label fdf7 columns_max
 dvec fdf7
 
@@ -934,6 +1088,7 @@ comment fdf9       char offset;    // offset into config_text
 comment fdf9       char value;     // 1,0,-1
 comment fdf9 }
 label fdf9 duplexing_page
+dec fdfd
 label fdff duplexing_half
 label fe05 duplexing_full
 label fe0b duplexing_max

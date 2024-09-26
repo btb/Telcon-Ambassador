@@ -6,6 +6,7 @@
 ;* Used Labels                                      *
 ;****************************************************
 
+; RAM addresses
 null_ptr EQU     $0000
 stack_top EQU     $0027                    ; top of stack
 duplexing_mode EQU     $0028                    ; char: duplexing control byte. PAG=1, HDX=0, FDX=-1
@@ -13,7 +14,7 @@ receive_buffer_tail_ptr EQU     $0029                    ; char *: pointer to ta
 key_buffer_head_ptr EQU     $002B                    ; char *: pointer to head of keyboard buffer FIFO
 cursor_position_ptr EQU     $002D                    ; word: cursor position
 serial_mode EQU     $002F                    ; char: control byte for setting USART serial mode
-temp_char EQU     $0030                    ; char: for temporarily saving character
+temp_str_ptr EQU     $0030                    ; char *: for temporarily saving position in string
 baud_gen_ptr EQU     $0032                    ; struct void *: pointer to baud generator set address
 current_row_end_ptr EQU     $0034                    ; char *: pointer to end of current row
 baud_config_ptr EQU     $0036                    ; struct baud *: pointer to current baud config struct
@@ -29,19 +30,15 @@ current_column EQU     $0045                    ; char: current column
 scroll_position EQU     $0046                    ; char *: current position during scroll operation
 max_column EQU     $0048                    ; char: highest column that can be displayed
 key_buffer_tail_ptr EQU     $0049                    ; char *: pointer to tail of keyboard buffer FIFO
-M004B   EQU     $004B                    ; char *: temp pointer
-M004C   EQU     $004C
-M004D   EQU     $004D
-M004F   EQU     $004F                    ; void *: temp pointer
-M0050   EQU     $0050
+screen_ptr EQU     $004B                    ; char *: pointer to position in screen_buffer
+row_number EQU     $004D
+temp_ptr EQU     $004F                    ; void *: temp pointer
 stack_ptr_save EQU     $0053                    ; void *: for temporarily saving the location of the stack pointer
 last_char_ptr EQU     $0055                    ; char *: pointer to last non-space character in screen buffer
-M0057   EQU     $0057                    ; word:
-M0058   EQU     $0058
-source_ptr EQU     $0059                    ; char *: source parameter for copy operations
+line_start_ptr EQU     $0057                    ; char *: pointer to first character in line
+temp_buf_ptr EQU     $0059                    ; char *: for temporarily storing pointer to part of screen buffer
 dest_ptr EQU     $005B                    ; char *: destination parameter for copy operations
-M005C   EQU     $005C
-M005D   EQU     $005D                    ; void *: for temporarily storing pointer to current config item
+param_text EQU     $005D                    ; void *: for temporarily storing pointer to current config item
 print_enabled EQU     $005F                    ; char: printing enabled. set by DC2, cleared by DC4
 M0060   EQU     $0060
 counter EQU     $0061                    ; char: loop counter
@@ -62,13 +59,12 @@ seq_processing EQU     $0073                    ; char: incremented when we're c
 flow_control_mode EQU     $0078                    ; char: flow control mode. 0==XON/XOFF
 hide_control_chars EQU     $0079                    ; char: clear for visible control characters, $08 for invisible
 show_cursor EQU     $007A                    ; char: clear for no invert, $80 for invert
-screen_buffer EQU     $0080                    ; char[80x24]: the screen buffer
-last_line_ptr EQU     $07B0                    ; address of start of last line of SCREEN
-screen_max_ptr EQU     $07FF                    ; last address of SCREEN
+screen_buffer EQU     $0080                    ; char[80*24]: the screen buffer
 key_buffer EQU     $0800                    ; char[34?]: keyboard buffer FIFO
 tab_stop_array EQU     $0823                    ; char[10]: tab stops
 receive_buffer EQU     $082E                    ; char[768]: received data buffer
 line_buffer EQU     $0B30                    ; char[80]: buffer for current(?) line
+memory_end EQU     $0BFF                    ; Last byte of our RAM
 
 ; I/O addresses
 baud_gen_base_addr EQU     $8000                    ; void[16]: baud generator control
@@ -96,10 +92,10 @@ hdlr_RST LDS     #stack_top               ;F000: 8E 00 27
         LDX     #null_ptr                ;F003: CE 00 00 
         CLRA                             ;F006: 4F 
         CLRB                             ;F007: 5F 
-; clear memory from 0 to mem_max  (0BFFh)
+; clear all the memory
 ZF008   STAA    ,X                       ;F008: A7 00 
         INX                              ;F00A: 08 
-        CPX     mem_max                  ;F00B: BC FD 26 
+        CPX     memory_end_ptr           ;F00B: BC FD 26 
         BNE     ZF008                    ;F00E: 26 F8 
         LDAA    #$80                     ;F010: 86 80 
         STAA    show_cursor              ;F012: 97 7A 
@@ -189,6 +185,7 @@ ZF097   STX     duplexing_config_ptr     ;F097: DF 3E
         STX     seq_process_ptr          ;F0B8: DF 71 
         CLI                              ;F0BA: 0E 
 
+; The main loop
 main    LDAA    beep_timer               ;F0BB: 96 6A 
         CMPA    #150                     ;F0BD: 81 96 
         BEQ     ZF0C4                    ;F0BF: 27 03 
@@ -202,7 +199,7 @@ ZF0C4   LDX     receive_buffer_tail_ptr  ;F0C4: DE 29
 ZF0CD   LDAA    ,X                       ;F0CD: A6 00 
         INX                              ;F0CF: 08 
 ; fold read buffer tail if necessary
-        CPX     receive_buffer_max       ;F0D0: BC FD 22 
+        CPX     receive_buffer_767       ;F0D0: BC FD 22 
         BNE     ZF0D8                    ;F0D3: 26 03 
         LDX     #receive_buffer          ;F0D5: CE 08 2E 
 ; update read buffer tail
@@ -286,7 +283,7 @@ check_key_buffer LDX     key_buffer_tail_ptr      ;F16D: DE 49
         JMP     main                     ;F173: 7E F0 BB 
 ZF176   LDAA    ,X                       ;F176: A6 00 
         INX                              ;F178: 08 
-        CPX     key_buffer_max           ;F179: BC FD 20 
+        CPX     key_buffer_34            ;F179: BC FD 20 
         BNE     ZF181                    ;F17C: 26 03 
         LDX     #key_buffer              ;F17E: CE 08 00 
 ZF181   STX     key_buffer_tail_ptr      ;F181: DF 49 
@@ -335,7 +332,7 @@ send_serial_byte LDAB    serial_control_addr      ;F1CD: F6 B0 05
         BGE     ZF1E3                    ;F1DB: 2C 06 
         CMPA    #$40                     ;F1DD: 81 40 
         BLE     ZF1E3                    ;F1DF: 2F 02 
-        ANDA    #$5F                     ;F1E1: 84 5F 
+        ANDA    #$5F                     ;F1E1: 84 5F          in TTY mode, make characters uppercase
 ZF1E3   STAA    serial_data_addr         ;F1E3: B7 B0 04 
         RTS                              ;F1E6: 39 
 
@@ -392,7 +389,7 @@ handle_receive_ready ANDB    #%01110000               ;F245: C4 70          Sync
         LDAB    #%00110111               ;F249: C6 37          RTS, error reset, Rx enable, DTR, Tx enable
         STAB    serial_control_addr      ;F24B: F7 B0 05 
         LDAA    serial_data_addr         ;F24E: B6 B0 04       chomp invalid byte
-        LDAA    #$3F                     ;F251: 86 3F          "?"
+        LDAA    #'?                      ;F251: 86 3F          replace it with a "?"
         BRA     ZF258                    ;F253: 20 03 
 handle_received_valid_byte LDAA    serial_data_addr         ;F255: B6 B0 04 
 ZF258   ANDA    #$7F                     ;F258: 84 7F          strip high bit
@@ -408,7 +405,7 @@ ZF258   ANDA    #$7F                     ;F258: 84 7F          strip high bit
 handle_received_character LDX     read_buffer_head_ptr     ;F26A: DE 42 
         STAA    ,X                       ;F26C: A7 00 
         INX                              ;F26E: 08 
-        CPX     receive_buffer_max       ;F26F: BC FD 22 
+        CPX     receive_buffer_767       ;F26F: BC FD 22 
         BNE     ZF277                    ;F272: 26 03 
         LDX     #receive_buffer          ;F274: CE 08 2E 
 ZF277   STX     read_buffer_head_ptr     ;F277: DF 42 
@@ -426,7 +423,7 @@ handle_keyboard_interrupt LDAA    kbd_data_addr            ;F287: B6 B0 08
         LDX     key_buffer_head_ptr      ;F28E: DE 2B 
         STAA    ,X                       ;F290: A7 00 
         INX                              ;F292: 08 
-        CPX     key_buffer_max           ;F293: BC FD 20 
+        CPX     key_buffer_34            ;F293: BC FD 20 
         BNE     ZF29B                    ;F296: 26 03 
         LDX     #key_buffer              ;F298: CE 08 00 
 ZF29B   STX     key_buffer_head_ptr      ;F29B: DF 2B 
@@ -474,7 +471,7 @@ soft_reset LDX     #key_buffer              ;F2BC: CE 08 00
         JSR     move_home                ;F2EA: BD F3 63 
         LDAA    preset_data              ;F2ED: B6 B0 0C       printer disabled?
         BPL     ZF2F5                    ;F2F0: 2A 03 
-        JSR     do_command_print_space   ;F2F2: BD FA 9F 
+        JSR     cmd_print_space          ;F2F2: BD FA 9F 
 ZF2F5   LDAA    #%00110111               ;F2F5: 86 37          RTS, error reset, Rx enable, DTR, Tx enable
         STAA    serial_control_addr      ;F2F7: B7 B0 05 
         LDAA    misc_port_data           ;F2FA: B6 B0 0E 
@@ -497,7 +494,7 @@ ZF316   ANDA    #$7F                     ;F316: 84 7F
 ZF31D   RTS                              ;F31D: 39 
 
 ; CTRL+CLEAR SCRN key pressed
-do_command_clear LDX     #esc_seq_clear           ;F31E: CE FE 36 
+cmd_clear LDX     #esc_seq_clear           ;F31E: CE FE 36 
         JSR     send_escape_sequence     ;F321: BD F1 AD 
         BRA     clear_screen             ;F324: 20 07 
 
@@ -511,7 +508,7 @@ cs_ED   LDAA    param1                   ;F326: 96 6C
 clear_screen SEI                              ;F32D: 0F 
         LDAB    #10                      ;F32E: C6 0A 
         STS     stack_ptr_save           ;F330: 9F 53 
-        LDS     #screen_max_ptr          ;F332: 8E 07 FF 
+        LDS     #screen_buffer+1919      ;F332: 8E 07 FF 
         CLR     >screen_buffer           ;F335: 7F 00 80 
         LDAA    #$20                     ;F338: 86 20          SP - Space
 ZF33A   PSHA                             ;F33A: 36 
@@ -524,14 +521,14 @@ ZF33A   PSHA                             ;F33A: 36
         PSHA                             ;F341: 36 
         DECB                             ;F342: 5A 
         BNE     ZF352                    ;F343: 26 0D 
-        STS     M004F                    ;F345: 9F 4F 
+        STS     temp_ptr                 ;F345: 9F 4F 
         LDS     stack_ptr_save           ;F347: 9E 53 
         CLI                              ;F349: 0E 
         NOP                              ;F34A: 01 
         NOP                              ;F34B: 01 
         NOP                              ;F34C: 01 
         SEI                              ;F34D: 0F 
-        LDS     M004F                    ;F34E: 9E 4F 
+        LDS     temp_ptr                 ;F34E: 9E 4F 
         LDAB    #10                      ;F350: C6 0A 
 ZF352   TST     >screen_buffer           ;F352: 7D 00 80 
         BEQ     ZF33A                    ;F355: 27 E3 
@@ -540,7 +537,7 @@ ZF352   TST     >screen_buffer           ;F352: 7D 00 80
         JMP     move_home                ;F35A: 7E F3 63 
 
 ; HOME key pressed
-do_command_home LDX     #esc_seq_home            ;F35D: CE FE 1B 
+cmd_home LDX     #esc_seq_home            ;F35D: CE FE 1B 
         JSR     send_escape_sequence     ;F360: BD F1 AD 
 move_home CLRA                             ;F363: 4F 
         CLRB                             ;F364: 5F 
@@ -548,7 +545,7 @@ move_home CLRA                             ;F363: 4F
         JMP     paint_cursor             ;F368: 7E F3 C8 
 
 ; RIGHT key pressed
-do_command_right LDX     #esc_seq_right           ;F36B: CE FE 31 
+cmd_right LDX     #esc_seq_right           ;F36B: CE FE 31 
         JSR     send_escape_sequence     ;F36E: BD F1 AD 
 ; CUF received
 do_cursor_forward LDAA    current_row              ;F371: 96 44 
@@ -562,20 +559,20 @@ ZF37D   JSR     get_position             ;F37D: BD F3 D1
         JMP     paint_cursor             ;F380: 7E F3 C8 
 
 ; DOWN key pressed
-do_command_down LDX     #esc_seq_down            ;F383: CE FE 27 
+cmd_down LDX     #esc_seq_down            ;F383: CE FE 27 
         JSR     send_escape_sequence     ;F386: BD F1 AD 
 ; CUD received
 do_cursor_down LDAB    current_column           ;F389: D6 45 
 ZF38B   LDAA    current_row              ;F38B: 96 44 
         INCA                             ;F38D: 4C 
-        CMPA    #$17                     ;F38E: 81 17 
+        CMPA    #23                      ;F38E: 81 17 
         BLE     ZF394                    ;F390: 2F 02 
-        LDAA    #$00                     ;F392: 86 00 
+        LDAA    #0                       ;F392: 86 00 
 ZF394   JSR     get_position             ;F394: BD F3 D1 
         JMP     paint_cursor             ;F397: 7E F3 C8 
 
 ; LEFT key pressed
-do_command_left LDX     #esc_seq_left            ;F39A: CE FE 2C 
+cmd_left LDX     #esc_seq_left            ;F39A: CE FE 2C 
         JSR     send_escape_sequence     ;F39D: BD F1 AD 
 ; CUB received
 do_cursor_backward LDAA    current_row              ;F3A0: 96 44 
@@ -588,15 +585,15 @@ ZF3AB   JSR     get_position             ;F3AB: BD F3 D1
         JMP     paint_cursor             ;F3AE: 7E F3 C8 
 
 ; UP key pressed
-do_command_up LDX     #esc_seq_up              ;F3B1: CE FE 22 
+cmd_up  LDX     #esc_seq_up              ;F3B1: CE FE 22 
         JSR     send_escape_sequence     ;F3B4: BD F1 AD 
 ; CUU received
 do_cursor_up LDAB    current_column           ;F3B7: D6 45 
 ZF3B9   LDAA    current_row              ;F3B9: 96 44 
         DECA                             ;F3BB: 4A 
-        CMPA    #$00                     ;F3BC: 81 00 
+        CMPA    #0                       ;F3BC: 81 00 
         BGE     ZF3C2                    ;F3BE: 2C 02 
-        LDAA    #$17                     ;F3C0: 86 17 
+        LDAA    #23                      ;F3C0: 86 17 
 ZF3C2   JSR     get_position             ;F3C2: BD F3 D1 
         JMP     paint_cursor             ;F3C5: 7E F3 C8 
 
@@ -630,16 +627,16 @@ get_position STAA    current_row              ;F3D1: 97 44
         ADCB    #$00                     ;F3E3: C9 00 
         ADDA    #$80                     ;F3E5: 8B 80 
         ADCB    #$00                     ;F3E7: C9 00 
-        STAB    M004B                    ;F3E9: D7 4B 
+        STAB    screen_ptr               ;F3E9: D7 4B 
         STAB    current_row_end_ptr      ;F3EB: D7 34 
-        STAA    M004C                    ;F3ED: 97 4C 
+        STAA    screen_ptr+1             ;F3ED: 97 4C 
         LDAB    max_column               ;F3EF: D6 48 
         SUBB    current_column           ;F3F1: D0 45 
         ABA                              ;F3F3: 1B 
         STAA    current_row_end_ptr+1    ;F3F4: 97 35 
         BCC     ZF3FB                    ;F3F6: 24 03 
         INC     >current_row_end_ptr     ;F3F8: 7C 00 34 
-ZF3FB   LDX     M004B                    ;F3FB: DE 4B 
+ZF3FB   LDX     screen_ptr               ;F3FB: DE 4B 
         RTS                              ;F3FD: 39 
 
 scroll_screen_sub LDX     #screen_buffer           ;F3FE: CE 00 80 
@@ -680,7 +677,7 @@ ZF428   LDX     scroll_position          ;F428: DE 46
 
 scroll_screen LDAB    #23                      ;F43A: C6 17 
         JSR     scroll_screen_sub        ;F43C: BD F3 FE 
-        LDX     #last_line_ptr           ;F43F: CE 07 B0 
+        LDX     #screen_buffer+1840      ;F43F: CE 07 B0       last line of screen_buffer
         JSR     blank_line               ;F442: BD F4 4F 
         LDAA    #23                      ;F445: 86 17 
         LDAB    current_column           ;F447: D6 45 
@@ -703,25 +700,26 @@ handle_command_code CMPA    #$FF                     ;F45A: 81 FF
 ZF461   ASLA                             ;F461: 48 
         TAB                              ;F462: 16 
         CLRA                             ;F463: 4F 
-        ADDB    #$E6                     ;F464: CB E6 
-        ADCA    #$FC                     ;F466: 89 FC 
-        STAA    M004F                    ;F468: 97 4F 
-        STAB    M0050                    ;F46A: D7 50 
+        ADDB    #$E6                     ;F464: CB E6          cmdvecs & 0xff
+        ADCA    #$FC                     ;F466: 89 FC          cmdvecs >> 8
+        STAA    temp_ptr                 ;F468: 97 4F 
+        STAB    temp_ptr+1               ;F46A: D7 50 
         LDX     cursor_position_ptr      ;F46C: DE 2D 
         LDAA    ,X                       ;F46E: A6 00 
         ANDA    #$7F                     ;F470: 84 7F 
         STAA    ,X                       ;F472: A7 00 
-        LDX     M004F                    ;F474: DE 4F 
+        LDX     temp_ptr                 ;F474: DE 4F 
         LDX     ,X                       ;F476: EE 00 
         JSR     ,X                       ;F478: AD 00 
         JMP     main                     ;F47A: 7E F0 BB 
 
 ; SHIFT+CTRL+D key pressed
-; CTRL+: key pressed
-do_command_nop RTS                              ;F47D: 39 
+; do nothing, just return
+cmd_nop RTS                              ;F47D: 39 
 
 ; BREAK key pressed
-do_command_break LDX     cursor_position_ptr      ;F47E: DE 2D 
+; toggle transmission of BREAK on or off
+cmd_break LDX     cursor_position_ptr      ;F47E: DE 2D 
         JSR     paint_cursor             ;F480: BD F3 C8 
         LDAA    break_mode_on            ;F483: 96 40 
         EORA    #1                       ;F485: 88 01 
@@ -735,7 +733,10 @@ ZF491   LDAA    #%00111111               ;F491: 86 3F          RTS, error reset,
         RTS                              ;F496: 39 
 
 ; RETURN key pressed
-do_command_return TST     >duplexing_mode          ;F497: 7D 00 28 
+; In page mode, just move to next line
+; In half or full duplex, also transmit CR
+; In full duplex, also update the cursor
+cmd_return TST     >duplexing_mode          ;F497: 7D 00 28 
         BGT     ZF4AB                    ;F49A: 2E 0F          PAG
         LDAA    #$0D                     ;F49C: 86 0D          CR - Carriage Return
         JSR     transmit_character       ;F49E: BD F1 C8 
@@ -748,17 +749,21 @@ ZF4AB   LDAA    current_row              ;F4AB: 96 44
         RTS                              ;F4B0: 39 
 
 ; BACK SPACE key pressed
-do_command_backspace TST     >duplexing_mode          ;F4B1: 7D 00 28 
-        BGT     do_command_backspace2    ;F4B4: 2E 0F          PAG
+cmd_backspace TST     >duplexing_mode          ;F4B1: 7D 00 28 
+        BGT     cmd_backspace2           ;F4B4: 2E 0F          PAG
         LDAA    #$08                     ;F4B6: 86 08          BS - Backspace
         JSR     transmit_character       ;F4B8: BD F1 C8 
         TST     >duplexing_mode          ;F4BB: 7D 00 28 
-        BEQ     do_command_backspace2    ;F4BE: 27 05          HDX
+        BEQ     cmd_backspace2           ;F4BE: 27 05          HDX
         LDX     cursor_position_ptr      ;F4C0: DE 2D 
         JMP     paint_cursor             ;F4C2: 7E F3 C8 
+; In page mode, just delete the character and move the cursor
+; In half or full duplex, also transmit BS
+; In full duplex, also update the cursor
 
 ; BS received
-do_command_backspace2 LDX     cursor_position_ptr      ;F4C5: DE 2D 
+; Delete character and move the cursor
+cmd_backspace2 LDX     cursor_position_ptr      ;F4C5: DE 2D 
         LDAA    #$20                     ;F4C7: 86 20 
         STAA    ,X                       ;F4C9: A7 00 
         LDAB    current_column           ;F4CB: D6 45 
@@ -769,7 +774,9 @@ ZF4D2   LDAA    current_row              ;F4D2: 96 44
         JMP     ZF212                    ;F4D5: 7E F2 12 
 
 ; PRINT XMIT key pressed
-do_command_transmit TST     >duplexing_mode          ;F4D8: 7D 00 28 
+; In half or full duplex, do nothing
+; In page mode, send screen text out
+cmd_transmit TST     >duplexing_mode          ;F4D8: 7D 00 28 
         BGT     ZF4E0                    ;F4DB: 2E 03          PAG
         JMP     ZF51E                    ;F4DD: 7E F5 1E 
 ZF4E0   JSR     screen_find_last_char    ;F4E0: BD F5 46 
@@ -778,54 +785,58 @@ ZF4E0   JSR     screen_find_last_char    ;F4E0: BD F5 46
         RTS                              ;F4E8: 39 
 ZF4E9   STX     last_char_ptr            ;F4E9: DF 55 
         LDAA    #$00                     ;F4EB: 86 00 
-        STAA    M004D                    ;F4ED: 97 4D 
+        STAA    row_number               ;F4ED: 97 4D 
         CLRB                             ;F4EF: 5F 
 ZF4F0   JSR     get_position             ;F4F0: BD F3 D1 
-        STX     M0057                    ;F4F3: DF 57 
-        JSR     ZF52A                    ;F4F5: BD F5 2A 
-        STX     source_ptr               ;F4F8: DF 59 
-        LDX     M0057                    ;F4FA: DE 57 
+        STX     line_start_ptr           ;F4F3: DF 57 
+        JSR     line_find_last_char      ;F4F5: BD F5 2A 
+        STX     temp_buf_ptr             ;F4F8: DF 59 
+        LDX     line_start_ptr           ;F4FA: DE 57 
 ZF4FC   LDAA    ,X                       ;F4FC: A6 00 
         JSR     transmit_character       ;F4FE: BD F1 C8 
-        CPX     source_ptr               ;F501: 9C 59 
+        CPX     temp_buf_ptr             ;F501: 9C 59 
         BEQ     ZF508                    ;F503: 27 03 
         INX                              ;F505: 08 
         BRA     ZF4FC                    ;F506: 20 F4 
 ZF508   JSR     transmit_CR_LF           ;F508: BD F5 1F 
         CPX     last_char_ptr            ;F50B: 9C 55 
         BEQ     ZF51B                    ;F50D: 27 0C 
-        LDAA    M004D                    ;F50F: 96 4D 
+        LDAA    row_number               ;F50F: 96 4D 
         INCA                             ;F511: 4C 
-        STAA    M004D                    ;F512: 97 4D 
-        CMPA    #$18                     ;F514: 81 18 
+        STAA    row_number               ;F512: 97 4D 
+        CMPA    #24                      ;F514: 81 18 
         BEQ     ZF51B                    ;F516: 27 03 
         CLRB                             ;F518: 5F 
         BRA     ZF4F0                    ;F519: 20 D5 
 ZF51B   JSR     move_home                ;F51B: BD F3 63 
 ZF51E   RTS                              ;F51E: 39 
 
+; Send out CR and LF
 transmit_CR_LF LDAA    #$0D                     ;F51F: 86 0D 
         JSR     transmit_character       ;F521: BD F1 C8 
         LDAA    #$0A                     ;F524: 86 0A 
         JSR     transmit_character       ;F526: BD F1 C8 
         RTS                              ;F529: 39 
-ZF52A   STX     M004F                    ;F52A: DF 4F 
+
+; Find last non-blank character in line
+line_find_last_char STX     temp_ptr                 ;F52A: DF 4F 
         LDX     current_row_end_ptr      ;F52C: DE 34 
 ZF52E   LDAA    ,X                       ;F52E: A6 00 
         ANDA    #$7F                     ;F530: 84 7F 
         CMPA    #$20                     ;F532: 81 20 
         BNE     ZF545                    ;F534: 26 0F 
         DEX                              ;F536: 09 
-        CPX     M004F                    ;F537: 9C 4F 
+        CPX     temp_ptr                 ;F537: 9C 4F 
         BNE     ZF52E                    ;F539: 26 F3 
         LDAA    ,X                       ;F53B: A6 00 
         ANDA    #$7F                     ;F53D: 84 7F 
         CMPA    #$20                     ;F53F: 81 20 
         BNE     ZF545                    ;F541: 26 02 
-        LDX     M004F                    ;F543: DE 4F 
+        LDX     temp_ptr                 ;F543: DE 4F 
 ZF545   RTS                              ;F545: 39 
 
-screen_find_last_char LDX     #screen_max_ptr          ;F546: CE 07 FF 
+; Find last non-blank character on screen
+screen_find_last_char LDX     #screen_buffer+1919      ;F546: CE 07 FF 
         NOP                              ;F549: 01 
 ZF54A   LDAA    ,X                       ;F54A: A6 00 
         ANDA    #$7F                     ;F54C: 84 7F 
@@ -842,31 +853,32 @@ ZF54A   LDAA    ,X                       ;F54A: A6 00
 ZF563   RTS                              ;F563: 39 
 
 ; SET MODE key pressed
-do_command_set_mode SEI                              ;F564: 0F 
-        LDAA    #$4F                     ;F565: 86 4F 
+; Interactively configure the terminal
+cmd_set_mode SEI                              ;F564: 0F 
+        LDAA    #79                      ;F565: 86 4F 
         STAA    max_column               ;F567: 97 48 
-        JSR     copy_screen_to_line_buffer ;F569: BD FC BD 
+        JSR     copy_screen_to_line_buffer ;F569: BD FC BD       save the text under the config line
         JSR     move_home                ;F56C: BD F3 63 
         JSR     blank_line               ;F56F: BD F4 4F 
-        LDX     #config_text             ;F572: CE FD 43 
+        LDX     #config_text             ;F572: CE FD 43       print the config line and all the values
         JSR     print_text               ;F575: BD F7 E3 
         LDX     baud_config_ptr          ;F578: DE 36 
-        LDAB    $05,X                    ;F57A: E6 05 
+        LDAB    $05,X                    ;F57A: E6 05          baud_config_ptr->offset
         JSR     print_parameter          ;F57C: BD F6 55 
         LDX     parity_config_ptr        ;F57F: DE 38 
-        LDAB    $02,X                    ;F581: E6 02 
+        LDAB    $02,X                    ;F581: E6 02          parity_config_ptr->offset
         JSR     print_parameter          ;F583: BD F6 55 
         LDX     stop_bits_config_ptr     ;F586: DE 3A 
-        LDAB    $02,X                    ;F588: E6 02 
+        LDAB    $02,X                    ;F588: E6 02          stop_bits_config_ptr->offset
         JSR     print_parameter          ;F58A: BD F6 55 
         LDX     columns_config_ptr       ;F58D: DE 3C 
-        LDAB    $03,X                    ;F58F: E6 03 
+        LDAB    $03,X                    ;F58F: E6 03          columns_config_ptr->offset
         JSR     print_parameter          ;F591: BD F6 55 
         LDX     duplexing_config_ptr     ;F594: DE 3E 
-        LDAB    $04,X                    ;F596: E6 04 
+        LDAB    $04,X                    ;F596: E6 04          duplexing_config_ptr->offset
         JSR     print_parameter          ;F598: BD F6 55 
         LDX     tty_config_ptr           ;F59B: DE 63 
-        LDAB    $04,X                    ;F59D: E6 04 
+        LDAB    $04,X                    ;F59D: E6 04          tty_config_ptr->offset
         JSR     print_parameter          ;F59F: BD F6 55 
 jmp_configure_baud JMP     configure_baud           ;F5A2: 7E F6 04 
 jmp_configure_parity JMP     configure_parity         ;F5A5: 7E F6 62 
@@ -875,24 +887,25 @@ jmp_configure_columns JMP     configure_columns        ;F5AB: 7E F6 F8
 jmp_configure_duplexing JMP     configure_duplexing      ;F5AE: 7E F7 45 
 jmp_configure_tty JMP     configure_tty            ;F5B1: 7E F7 94 
 
+; Apply settings to baud generator, USART, etc
 serial_init LDX     baud_config_ptr          ;F5B4: DE 36 
-        LDAA    $06,X                    ;F5B6: A6 06 
+        LDAA    $06,X                    ;F5B6: A6 06          baud_config_ptr->value
         STAA    baud_gen_ptr+1           ;F5B8: 97 33 
         LDX     baud_gen_ptr             ;F5BA: DE 32 
         LDAA    ,X                       ;F5BC: A6 00 
         LDX     parity_config_ptr        ;F5BE: DE 38 
-        LDAA    $03,X                    ;F5C0: A6 03 
+        LDAA    $03,X                    ;F5C0: A6 03          parity_config_ptr->value
         LDX     stop_bits_config_ptr     ;F5C2: DE 3A 
-        ORAA    $03,X                    ;F5C4: AA 03 
+        ORAA    $03,X                    ;F5C4: AA 03          stop_bits_config_ptr->value
         STAA    serial_mode              ;F5C6: 97 2F 
         LDX     columns_config_ptr       ;F5C8: DE 3C 
-        LDAA    $04,X                    ;F5CA: A6 04 
+        LDAA    $04,X                    ;F5CA: A6 04          columns_config_ptr->value
         STAA    max_column               ;F5CC: 97 48 
         LDX     duplexing_config_ptr     ;F5CE: DE 3E 
-        LDAA    $05,X                    ;F5D0: A6 05 
+        LDAA    $05,X                    ;F5D0: A6 05          duplexing_config_ptr->value
         STAA    duplexing_mode           ;F5D2: 97 28 
         LDX     tty_config_ptr           ;F5D4: DE 63 
-        LDAA    $05,X                    ;F5D6: A6 05 
+        LDAA    $05,X                    ;F5D6: A6 05          tty_config_ptr->value
         STAA    tty_mode                 ;F5D8: 97 62 
         LDAA    #$81                     ;F5DA: 86 81 
         STAA    serial_control_addr      ;F5DC: B7 B0 05 
@@ -916,7 +929,7 @@ serial_init LDX     baud_config_ptr          ;F5B4: DE 36
         RTS                              ;F603: 39 
 
 configure_baud LDX     baud_config_ptr          ;F604: DE 36 
-        LDAB    $05,X                    ;F606: E6 05 
+        LDAB    $05,X                    ;F606: E6 05          baud_config_ptr->offset
         CLRA                             ;F608: 4F 
         JSR     get_position             ;F609: BD F3 D1 
         JSR     paint_cursor             ;F60C: BD F3 C8 
@@ -939,7 +952,7 @@ ZF61D   TSTA                             ;F61D: 4D
         DEX                              ;F62C: 09 
         DEX                              ;F62D: 09 
 save_baud STX     baud_config_ptr          ;F62E: DF 36 
-        LDAB    $05,X                    ;F630: E6 05 
+        LDAB    $05,X                    ;F630: E6 05          baud_config_ptr->offset
         JSR     print_parameter          ;F632: BD F6 55 
         JMP     configure_baud           ;F635: 7E F6 04 
 increment_baud LDX     baud_config_ptr          ;F638: DE 36 
@@ -961,15 +974,15 @@ ZF652   JMP     jmp_configure_parity     ;F652: 7E F5 A5
 
 ; move the cursor to column B of the config line
 ; and print the parameter value pointed to by X
-print_parameter STX     M005D                    ;F655: DF 5D 
+print_parameter STX     param_text               ;F655: DF 5D 
         CLRA                             ;F657: 4F 
         JSR     get_position             ;F658: BD F3 D1 
         STX     cursor_position_ptr      ;F65B: DF 2D 
-        LDX     M005D                    ;F65D: DE 5D 
+        LDX     param_text               ;F65D: DE 5D 
         JMP     print_text               ;F65F: 7E F7 E3 
 
 configure_parity LDX     parity_config_ptr        ;F662: DE 38 
-        LDAB    $02,X                    ;F664: E6 02 
+        LDAB    $02,X                    ;F664: E6 02          parity_config_ptr->offset
         CLRA                             ;F666: 4F 
         JSR     get_position             ;F667: BD F3 D1 
         JSR     paint_cursor             ;F66A: BD F3 C8 
@@ -989,7 +1002,7 @@ ZF67B   TSTA                             ;F67B: 4D
         DEX                              ;F687: 09 
         DEX                              ;F688: 09 
 save_parity STX     parity_config_ptr        ;F689: DF 38 
-        LDAB    $02,X                    ;F68B: E6 02 
+        LDAB    $02,X                    ;F68B: E6 02          parity_config_ptr->offset
         JSR     print_parameter          ;F68D: BD F6 55 
         JMP     configure_parity         ;F690: 7E F6 62 
 increment_parity LDX     parity_config_ptr        ;F693: DE 38 
@@ -1007,7 +1020,7 @@ ZF6A0   JSR     ZF7F1                    ;F6A0: BD F7 F1
 ZF6AA   JMP     jmp_configure_stop_bits  ;F6AA: 7E F5 A8 
 
 configure_stop_bits LDX     stop_bits_config_ptr     ;F6AD: DE 3A 
-        LDAB    $02,X                    ;F6AF: E6 02 
+        LDAB    $02,X                    ;F6AF: E6 02          stop_bits_config_ptr->offset
         CLRA                             ;F6B1: 4F 
         JSR     get_position             ;F6B2: BD F3 D1 
         JSR     paint_cursor             ;F6B5: BD F3 C8 
@@ -1027,7 +1040,7 @@ ZF6C6   TSTA                             ;F6C6: 4D
         DEX                              ;F6D2: 09 
         DEX                              ;F6D3: 09 
 save_stop_bits STX     stop_bits_config_ptr     ;F6D4: DF 3A 
-        LDAB    $02,X                    ;F6D6: E6 02 
+        LDAB    $02,X                    ;F6D6: E6 02          stop_bits_config_ptr->offset
         JSR     print_parameter          ;F6D8: BD F6 55 
         JMP     configure_stop_bits      ;F6DB: 7E F6 AD 
 increment_stop_bits LDX     stop_bits_config_ptr     ;F6DE: DE 3A 
@@ -1045,7 +1058,7 @@ ZF6EB   JSR     ZF7F1                    ;F6EB: BD F7 F1
 ZF6F5   JMP     jmp_configure_columns    ;F6F5: 7E F5 AB 
 
 configure_columns LDX     columns_config_ptr       ;F6F8: DE 3C 
-        LDAB    $03,X                    ;F6FA: E6 03 
+        LDAB    $03,X                    ;F6FA: E6 03          columns_config_ptr->offset
         CLRA                             ;F6FC: 4F 
         JSR     get_position             ;F6FD: BD F3 D1 
         JSR     paint_cursor             ;F700: BD F3 C8 
@@ -1066,7 +1079,7 @@ ZF711   TSTA                             ;F711: 4D
         DEX                              ;F71E: 09 
         DEX                              ;F71F: 09 
 save_columns STX     columns_config_ptr       ;F720: DF 3C 
-        LDAB    $03,X                    ;F722: E6 03 
+        LDAB    $03,X                    ;F722: E6 03          columns_config_ptr->offset
         JSR     print_parameter          ;F724: BD F6 55 
         JMP     configure_columns        ;F727: 7E F6 F8 
 increment_columns LDX     columns_config_ptr       ;F72A: DE 3C 
@@ -1085,7 +1098,7 @@ ZF738   JSR     ZF7F1                    ;F738: BD F7 F1
 ZF742   JMP     jmp_configure_duplexing  ;F742: 7E F5 AE 
 
 configure_duplexing LDX     duplexing_config_ptr     ;F745: DE 3E 
-        LDAB    $04,X                    ;F747: E6 04 
+        LDAB    $04,X                    ;F747: E6 04          duplexing_config_ptr->offset
         CLRA                             ;F749: 4F 
         JSR     get_position             ;F74A: BD F3 D1 
         JSR     paint_cursor             ;F74D: BD F3 C8 
@@ -1107,7 +1120,7 @@ ZF75E   TSTA                             ;F75E: 4D
         DEX                              ;F76C: 09 
         DEX                              ;F76D: 09 
 save_duplexing STX     duplexing_config_ptr     ;F76E: DF 3E 
-        LDAB    $04,X                    ;F770: E6 04 
+        LDAB    $04,X                    ;F770: E6 04          duplexing_config_ptr->offset
         JSR     print_parameter          ;F772: BD F6 55 
         JMP     configure_duplexing      ;F775: 7E F7 45 
 increment_duplexing LDX     duplexing_config_ptr     ;F778: DE 3E 
@@ -1127,7 +1140,7 @@ ZF787   JSR     ZF7F1                    ;F787: BD F7 F1
 ZF791   JMP     jmp_configure_tty        ;F791: 7E F5 B1 
 
 configure_tty LDX     tty_config_ptr           ;F794: DE 63 
-        LDAB    $04,X                    ;F796: E6 04 
+        LDAB    $04,X                    ;F796: E6 04          tty_config_ptr->offset
         CLRA                             ;F798: 4F 
         JSR     get_position             ;F799: BD F3 D1 
         JSR     paint_cursor             ;F79C: BD F3 C8 
@@ -1149,7 +1162,7 @@ ZF7AD   TSTA                             ;F7AD: 4D
         DEX                              ;F7BB: 09 
         DEX                              ;F7BC: 09 
 save_tty STX     tty_config_ptr           ;F7BD: DF 63 
-        LDAB    $04,X                    ;F7BF: E6 04 
+        LDAB    $04,X                    ;F7BF: E6 04          tty_config_ptr->offset
         JSR     print_parameter          ;F7C1: BD F6 55 
         JMP     configure_tty            ;F7C4: 7E F7 94 
 increment_tty LDX     tty_config_ptr           ;F7C7: DE 63 
@@ -1171,9 +1184,9 @@ ZF7E0   JMP     jmp_configure_tty        ;F7E0: 7E F5 B1
 print_text LDAA    ,X                       ;F7E3: A6 00 
         BEQ     ZF7F1                    ;F7E5: 27 0A 
         INX                              ;F7E7: 08 
-        STX     temp_char                ;F7E8: DF 30 
+        STX     temp_str_ptr             ;F7E8: DF 30 
         JSR     add_character_to_screen  ;F7EA: BD F1 E7 
-        LDX     temp_char                ;F7ED: DE 30 
+        LDX     temp_str_ptr             ;F7ED: DE 30 
         BRA     print_text               ;F7EF: 20 F2 
 ZF7F1   LDX     cursor_position_ptr      ;F7F1: DE 2D 
         LDAA    ,X                       ;F7F3: A6 00 
@@ -1196,7 +1209,7 @@ get_key CLI                              ;F7FA: 0E
         JMP     get_key                  ;F801: 7E F7 FA 
 ZF804   LDAA    ,X                       ;F804: A6 00 
         INX                              ;F806: 08 
-        CPX     key_buffer_max           ;F807: BC FD 20 
+        CPX     key_buffer_34            ;F807: BC FD 20 
         BNE     ZF80F                    ;F80A: 26 03 
         LDX     #key_buffer              ;F80C: CE 08 00 
 ZF80F   STX     key_buffer_tail_ptr      ;F80F: DF 49 
@@ -1230,88 +1243,91 @@ ZF833   CMPA    #$84                     ;F833: 81 84          UP
         RTS                              ;F83A: 39 
 
 ; CTRL+ESC key pressed
-do_command_edit_tabs SEI                              ;F83B: 0F 
+; Interactively edit tab stops
+cmd_edit_tabs SEI                              ;F83B: 0F 
         LDAA    max_column               ;F83C: 96 48 
         STAA    max_column_temp          ;F83E: 97 41 
         LDAA    #79                      ;F840: 86 4F 
         STAA    max_column               ;F842: 97 48 
-        JSR     copy_screen_to_line_buffer ;F844: BD FC BD 
+        JSR     copy_screen_to_line_buffer ;F844: BD FC BD       save the text under the config line
         JSR     move_home                ;F847: BD F3 63 
-        LDAA    #4                       ;F84A: 86 04 
+        LDAA    #4                       ;F84A: 86 04          print the tab ruler (4 times)
         STAA    counter                  ;F84C: 97 61 
 ZF84E   LDX     #ruler_text              ;F84E: CE FD 2E 
         JSR     print_text               ;F851: BD F7 E3 
         DEC     >counter                 ;F854: 7A 00 61 
         BNE     ZF84E                    ;F857: 26 F5 
         CLRA                             ;F859: 4F 
-        LDX     #tab_stop_array          ;F85A: CE 08 23 
+        LDX     #tab_stop_array          ;F85A: CE 08 23       print the current tab stops
 ZF85D   LDAB    ,X                       ;F85D: E6 00 
-        BEQ     ZF873                    ;F85F: 27 12 
+        BEQ     ZF873                    ;F85F: 27 12          no more tab stops
         INX                              ;F861: 08 
-        STX     M004F                    ;F862: DF 4F 
+        STX     temp_ptr                 ;F862: DF 4F 
         JSR     get_position             ;F864: BD F3 D1 
-        LDAA    #$7F                     ;F867: 86 7F 
+        LDAA    #$7F                     ;F867: 86 7F          print tab stop as a "shade" block
         STAA    ,X                       ;F869: A7 00 
         CLRA                             ;F86B: 4F 
-        LDX     M004F                    ;F86C: DE 4F 
-        CPX     tab_array_end            ;F86E: BC FD 24 
+        LDX     temp_ptr                 ;F86C: DE 4F 
+        CPX     tab_stop_array_10        ;F86E: BC FD 24 
         BNE     ZF85D                    ;F871: 26 EA 
 ZF873   JSR     move_home                ;F873: BD F3 63 
-ZF876   JSR     get_key                  ;F876: BD F7 FA 
+edit_tabs_loop JSR     get_key                  ;F876: BD F7 FA 
         TSTB                             ;F879: 5D 
-        BNE     ZF87F                    ;F87A: 26 03          return pressed
-        JMP     ZF8ED                    ;F87C: 7E F8 ED 
-ZF87F   BPL     ZF897                    ;F87F: 2A 16          up or down pressed
-        LDX     cursor_position_ptr      ;F881: DE 2D 
+        BNE     ZF87F                    ;F87A: 26 03          UP, DOWN, LEFT, or RIGHT pressed
+        JMP     edit_tabs_done           ;F87C: 7E F8 ED       RETURN pressed
+ZF87F   BPL     ZF897                    ;F87F: 2A 16          UP or DOWN pressed
+        LDX     cursor_position_ptr      ;F881: DE 2D          LEFT or RIGHT pressed, clear inverted character bit
         LDAA    ,X                       ;F883: A6 00 
         ANDA    #$7F                     ;F885: 84 7F 
         STAA    ,X                       ;F887: A7 00 
         CMPB    #$FF                     ;F889: C1 FF 
-        BEQ     ZF892                    ;F88B: 27 05          left pressed
-        JSR     tab_cursor_right         ;F88D: BD F9 24 
-        BRA     ZF876                    ;F890: 20 E4 
-ZF892   JSR     tab_cursor_left          ;F892: BD F9 18 
-        BRA     ZF876                    ;F895: 20 DF 
+        BEQ     ZF892                    ;F88B: 27 05          LEFT pressed
+        JSR     edit_tabs_right          ;F88D: BD F9 24 
+        BRA     edit_tabs_loop           ;F890: 20 E4 
+ZF892   JSR     edit_tabs_left           ;F892: BD F9 18 
+        BRA     edit_tabs_loop           ;F895: 20 DF 
 ZF897   TSTA                             ;F897: 4D 
-        BNE     ZF8B7                    ;F898: 26 1D          down pressed
-        LDX     #tab_stop_array+9        ;F89A: CE 08 2C 
+        BNE     edit_tabs_down           ;F898: 26 1D          DOWN pressed
+        LDX     #tab_stop_array+9        ;F89A: CE 08 2C       UP pressed
         LDAA    ,X                       ;F89D: A6 00 
         BEQ     ZF8A4                    ;F89F: 27 03 
-        JMP     ZF876                    ;F8A1: 7E F8 76 
+        JMP     edit_tabs_loop           ;F8A1: 7E F8 76       tab stop array is full, can't add
 ZF8A4   LDAA    current_column           ;F8A4: 96 45 
         BNE     ZF8AB                    ;F8A6: 26 03 
-        JMP     ZF876                    ;F8A8: 7E F8 76 
+        JMP     edit_tabs_loop           ;F8A8: 7E F8 76       can't add tab stop at column 0
 ZF8AB   JSR     add_tab_stop             ;F8AB: BD F8 FD 
         LDX     cursor_position_ptr      ;F8AE: DE 2D 
-        LDAA    #$FF                     ;F8B0: 86 FF 
+        LDAA    #$FF                     ;F8B0: 86 FF          print tab stop as an inverted "shade" block
         STAA    ,X                       ;F8B2: A7 00 
-        JMP     ZF876                    ;F8B4: 7E F8 76 
-ZF8B7   LDAA    current_column           ;F8B7: 96 45 
+        JMP     edit_tabs_loop           ;F8B4: 7E F8 76 
+edit_tabs_down LDAA    current_column           ;F8B7: 96 45 
         LDX     #tab_stop_array          ;F8B9: CE 08 23 
 ZF8BC   LDAB    ,X                       ;F8BC: E6 00 
         BNE     ZF8C3                    ;F8BE: 26 03 
-        JMP     ZF876                    ;F8C0: 7E F8 76 
+        JMP     edit_tabs_loop           ;F8C0: 7E F8 76       no tab stop here
 ZF8C3   CBA                              ;F8C3: 11 
-        BEQ     ZF8CF                    ;F8C4: 27 09 
+        BEQ     ZF8CF                    ;F8C4: 27 09          this is the tab stop we're looking for
         INX                              ;F8C6: 08 
-        CPX     tab_array_end            ;F8C7: BC FD 24 
+        CPX     tab_stop_array_10        ;F8C7: BC FD 24 
         BNE     ZF8BC                    ;F8CA: 26 F0 
-        JMP     ZF876                    ;F8CC: 7E F8 76 
+        JMP     edit_tabs_loop           ;F8CC: 7E F8 76       no tab stop found for this column
 ZF8CF   JSR     delete_tab_stop          ;F8CF: BD F9 32 
         LDAB    current_column           ;F8D2: D6 45 
-ZF8D4   SUBB    #10                      ;F8D4: C0 0A 
+ZF8D4   SUBB    #10                      ;F8D4: C0 0A          redraw correct charactor in the ruler
         BPL     ZF8D4                    ;F8D6: 2A FC 
-        LDAA    #$B1                     ;F8D8: 86 B1 
-        ADDB    #$0A                     ;F8DA: CB 0A 
+        LDAA    #$B1                     ;F8D8: 86 B1          inverse "1"
+        ADDB    #10                      ;F8DA: CB 0A 
         BEQ     ZF8E6                    ;F8DC: 27 08 
-        LDAA    #$B6                     ;F8DE: 86 B6 
-        CMPB    #$05                     ;F8E0: C1 05 
+        LDAA    #$B6                     ;F8DE: 86 B6          inverse "6"
+        CMPB    #5                       ;F8E0: C1 05 
         BEQ     ZF8E6                    ;F8E2: 27 02 
-        LDAA    #$AD                     ;F8E4: 86 AD 
+        LDAA    #$AD                     ;F8E4: 86 AD          inverse "-"
 ZF8E6   LDX     cursor_position_ptr      ;F8E6: DE 2D 
         STAA    ,X                       ;F8E8: A7 00 
-        JMP     ZF876                    ;F8EA: 7E F8 76 
-ZF8ED   JSR     copy_line_buffer_to_screen ;F8ED: BD FC D9 
+        JMP     edit_tabs_loop           ;F8EA: 7E F8 76 
+
+; restore the cursor position and the screen under the tab ruler
+edit_tabs_done JSR     copy_line_buffer_to_screen ;F8ED: BD FC D9 
         JSR     move_home                ;F8F0: BD F3 63 
         LDAA    max_column_temp          ;F8F3: 96 41 
         STAA    max_column               ;F8F5: 97 48 
@@ -1319,30 +1335,31 @@ ZF8ED   JSR     copy_line_buffer_to_screen ;F8ED: BD FC D9
         LDX     cursor_position_ptr      ;F8F8: DE 2D 
         JMP     paint_cursor             ;F8FA: 7E F3 C8 
 
+; Add a new tab stop at current_column
 add_tab_stop LDAB    current_column           ;F8FD: D6 45 
         LDX     #tab_stop_array          ;F8FF: CE 08 23 
 ZF902   LDAA    ,X                       ;F902: A6 00 
-        BEQ     ZF915                    ;F904: 27 0F 
+        BEQ     ZF915                    ;F904: 27 0F          found an empty slot
         CBA                              ;F906: 11 
-        BEQ     ZF917                    ;F907: 27 0E 
+        BEQ     ZF917                    ;F907: 27 0E          already a tab stop in this column
         BLT     ZF90E                    ;F909: 2D 03 
-        STAB    ,X                       ;F90B: E7 00 
-        TAB                              ;F90D: 16 
+        STAB    ,X                       ;F90B: E7 00          insert it here
+        TAB                              ;F90D: 16             now we have to re-insert the tab stop that was here before
 ZF90E   INX                              ;F90E: 08 
-        CPX     tab_array_end            ;F90F: BC FD 24 
+        CPX     tab_stop_array_10        ;F90F: BC FD 24 
         BNE     ZF902                    ;F912: 26 EE 
         RTS                              ;F914: 39 
 ZF915   STAB    ,X                       ;F915: E7 00 
 ZF917   RTS                              ;F917: 39 
 
-tab_cursor_left CLRA                             ;F918: 4F 
+edit_tabs_left CLRA                             ;F918: 4F 
         LDAB    current_column           ;F919: D6 45 
         BEQ     ZF91E                    ;F91B: 27 01 
         DECB                             ;F91D: 5A 
 ZF91E   JSR     get_position             ;F91E: BD F3 D1 
         JMP     paint_cursor             ;F921: 7E F3 C8 
 
-tab_cursor_right CLRA                             ;F924: 4F 
+edit_tabs_right CLRA                             ;F924: 4F 
         LDAB    current_column           ;F925: D6 45 
         CMPB    max_column               ;F927: D1 48 
         BEQ     ZF92C                    ;F929: 27 01 
@@ -1350,24 +1367,24 @@ tab_cursor_right CLRA                             ;F924: 4F
 ZF92C   JSR     get_position             ;F92C: BD F3 D1 
         JMP     paint_cursor             ;F92F: 7E F3 C8 
 
-delete_tab_stop STX     M004F                    ;F932: DF 4F 
+delete_tab_stop STX     temp_ptr                 ;F932: DF 4F 
         LDX     #tab_stop_array+9        ;F934: CE 08 2C 
         CLRB                             ;F937: 5F 
-        CPX     M004F                    ;F938: 9C 4F 
+        CPX     temp_ptr                 ;F938: 9C 4F 
         BEQ     ZF946                    ;F93A: 27 0A 
 ZF93C   LDAA    ,X                       ;F93C: A6 00 
         STAB    ,X                       ;F93E: E7 00 
         TAB                              ;F940: 16 
         DEX                              ;F941: 09 
-        CPX     M004F                    ;F942: 9C 4F 
+        CPX     temp_ptr                 ;F942: 9C 4F 
         BNE     ZF93C                    ;F944: 26 F6 
 ZF946   STAB    ,X                       ;F946: E7 00 
         RTS                              ;F948: 39 
 
-do_command_horizontal_tab LDX     #tab_stop_array          ;F949: CE 08 23 
+cmd_horizontal_tab LDX     #tab_stop_array          ;F949: CE 08 23 
         LDAA    ,X                       ;F94C: A6 00 
         BNE     ZF955                    ;F94E: 26 05 
-        LDAA    #$20                     ;F950: 86 20 
+        LDAA    #$20                     ;F950: 86 20          no tab stops, just add a space
         JMP     add_character_to_screen  ;F952: 7E F1 E7 
 ZF955   CMPA    max_column               ;F955: 91 48 
         BGT     ZF971                    ;F957: 2E 18 
@@ -1379,32 +1396,32 @@ ZF955   CMPA    max_column               ;F955: 91 48
 ZF961   JSR     get_position             ;F961: BD F3 D1 
         JMP     paint_cursor             ;F964: 7E F3 C8 
 ZF967   INX                              ;F967: 08 
-        CPX     tab_array_end            ;F968: BC FD 24 
+        CPX     tab_stop_array_10        ;F968: BC FD 24 
         BEQ     ZF971                    ;F96B: 27 04 
         LDAA    ,X                       ;F96D: A6 00 
         BNE     ZF955                    ;F96F: 26 E4 
 ZF971   CLRB                             ;F971: 5F 
         LDAA    current_row              ;F972: 96 44 
         INCA                             ;F974: 4C 
-        CMPA    #$17                     ;F975: 81 17 
+        CMPA    #23                      ;F975: 81 17 
         BLE     ZF961                    ;F977: 2F E8 
         STAB    current_column           ;F979: D7 45 
         JMP     scroll_screen            ;F97B: 7E F4 3A 
 
 ; CTRL+I key pressed
-do_command_tab TST     >duplexing_mode          ;F97E: 7D 00 28 
+cmd_tab TST     >duplexing_mode          ;F97E: 7D 00 28 
         BLE     ZF986                    ;F981: 2F 03          HDX or FDX
-        JMP     do_command_horizontal_tab ;F983: 7E F9 49 
+        JMP     cmd_horizontal_tab       ;F983: 7E F9 49 
 ZF986   LDAA    #$09                     ;F986: 86 09          HT - Horizontal Tab
         JSR     transmit_character       ;F988: BD F1 C8 
         TST     >duplexing_mode          ;F98B: 7D 00 28 
         BPL     ZF995                    ;F98E: 2A 05          PAG
         LDX     cursor_position_ptr      ;F990: DE 2D 
         JMP     paint_cursor             ;F992: 7E F3 C8 
-ZF995   JMP     do_command_horizontal_tab ;F995: 7E F9 49 
+ZF995   JMP     cmd_horizontal_tab       ;F995: 7E F9 49 
 
 ; SHIFT+PRINT XMIT key pressed
-do_command_print LDAA    preset_data              ;F998: B6 B0 0C       printer enabled?
+cmd_print LDAA    preset_data              ;F998: B6 B0 0C       printer enabled?
         BMI     ZF9A0                    ;F99B: 2B 03 
         JMP     ZFA10                    ;F99D: 7E FA 10 
 ZF9A0   LDAB    #$04                     ;F9A0: C6 04 
@@ -1420,23 +1437,23 @@ ZF9A8   LDAB    printer_data_addr        ;F9A8: F6 B0 0A
         BNE     ZF9BB                    ;F9B8: 26 01 
         RTS                              ;F9BA: 39 
 ZF9BB   STX     last_char_ptr            ;F9BB: DF 55 
-        LDAA    #$00                     ;F9BD: 86 00 
-        STAA    M004D                    ;F9BF: 97 4D 
+        LDAA    #0                       ;F9BD: 86 00 
+        STAA    row_number               ;F9BF: 97 4D 
         CLRB                             ;F9C1: 5F 
 ZF9C2   JSR     get_position             ;F9C2: BD F3 D1 
-        STX     M0057                    ;F9C5: DF 57 
+        STX     line_start_ptr           ;F9C5: DF 57 
         CLRA                             ;F9C7: 4F 
-        LDAB    #$4F                     ;F9C8: C6 4F 
-        ADDB    M0058                    ;F9CA: DB 58 
-        ADCA    M0057                    ;F9CC: 99 57 
+        LDAB    #79                      ;F9C8: C6 4F 
+        ADDB    line_start_ptr+1         ;F9CA: DB 58 
+        ADCA    line_start_ptr           ;F9CC: 99 57 
         STAA    dest_ptr                 ;F9CE: 97 5B 
-        STAB    M005C                    ;F9D0: D7 5C 
-        JSR     ZF52A                    ;F9D2: BD F5 2A 
-        STX     source_ptr               ;F9D5: DF 59 
-        LDX     M0057                    ;F9D7: DE 57 
+        STAB    dest_ptr+1               ;F9D0: D7 5C 
+        JSR     line_find_last_char      ;F9D2: BD F5 2A 
+        STX     temp_buf_ptr             ;F9D5: DF 59 
+        LDX     line_start_ptr           ;F9D7: DE 57 
 ZF9D9   LDAA    ,X                       ;F9D9: A6 00 
         JSR     print_character          ;F9DB: BD FA 14 
-        CPX     source_ptr               ;F9DE: 9C 59 
+        CPX     temp_buf_ptr             ;F9DE: 9C 59 
         BEQ     ZF9E5                    ;F9E0: 27 03 
         INX                              ;F9E2: 08 
         BRA     ZF9D9                    ;F9E3: 20 F4 
@@ -1448,10 +1465,10 @@ ZF9EE   LDAB    printer_data_addr        ;F9EE: F6 B0 0A
         BPL     ZF9EE                    ;F9F1: 2A FB 
         CPX     last_char_ptr            ;F9F3: 9C 55 
         BEQ     ZFA03                    ;F9F5: 27 0C 
-        LDAA    M004D                    ;F9F7: 96 4D 
+        LDAA    row_number               ;F9F7: 96 4D 
         INCA                             ;F9F9: 4C 
-        STAA    M004D                    ;F9FA: 97 4D 
-        CMPA    #$18                     ;F9FC: 81 18 
+        STAA    row_number               ;F9FA: 97 4D 
+        CMPA    #24                      ;F9FC: 81 18 
         BEQ     ZFA03                    ;F9FE: 27 03 
         CLRB                             ;FA00: 5F 
         BRA     ZF9C2                    ;FA01: 20 BF 
@@ -1498,16 +1515,16 @@ ZFA47   LDAA    printer_control_addr     ;FA47: B6 B0 0B
         RTS                              ;FA4F: 39 
 
 ; CR received
-do_command_carriage_return LDAA    current_row              ;FA50: 96 44 
+cmd_carriage_return LDAA    current_row              ;FA50: 96 44 
         CLRB                             ;FA52: 5F 
         JSR     get_position             ;FA53: BD F3 D1 
         JMP     paint_cursor             ;FA56: 7E F3 C8 
 
 ; LF received
-do_command_line_feed LDAB    current_column           ;FA59: D6 45 
+cmd_line_feed LDAB    current_column           ;FA59: D6 45 
         LDAA    current_row              ;FA5B: 96 44 
         INCA                             ;FA5D: 4C 
-        CMPA    #$17                     ;FA5E: 81 17 
+        CMPA    #23                      ;FA5E: 81 17 
         BLE     ZFA65                    ;FA60: 2F 03 
         JMP     scroll_screen            ;FA62: 7E F4 3A 
 ZFA65   JSR     get_position             ;FA65: BD F3 D1 
@@ -1515,7 +1532,7 @@ ZFA65   JSR     get_position             ;FA65: BD F3 D1
 
 ; DC2 received
 ; CTRL+1 key pressed
-do_command_print_enable LDAA    preset_data              ;FA6B: B6 B0 0C       printer disabled?
+cmd_print_enable LDAA    preset_data              ;FA6B: B6 B0 0C       printer disabled?
         BPL     ZFA76                    ;FA6E: 2A 06 
         INC     >print_enabled           ;FA70: 7C 00 5F 
         JSR     print_nulls              ;FA73: BD FA 8B 
@@ -1524,7 +1541,7 @@ ZFA76   LDX     cursor_position_ptr      ;FA76: DE 2D
 
 ; DC4 received
 ; CTRL+2 key pressed
-do_command_print_disable LDAA    preset_data              ;FA7B: B6 B0 0C       printer disabled?
+cmd_print_disable LDAA    preset_data              ;FA7B: B6 B0 0C       printer disabled?
         BPL     ZFA86                    ;FA7E: 2A 06 
         CLR     >print_enabled           ;FA80: 7F 00 5F 
         JSR     print_nulls              ;FA83: BD FA 8B 
@@ -1541,23 +1558,23 @@ ZFA8F   CLRA                             ;FA8F: 4F
         RTS                              ;FA98: 39 
 
 ; CTRL+PRINT XMIT key pressed
-do_command_print_transmit JSR     do_command_transmit      ;FA99: BD F4 D8 
-        JMP     do_command_print         ;FA9C: 7E F9 98 
+cmd_print_transmit JSR     cmd_transmit             ;FA99: BD F4 D8 
+        JMP     cmd_print                ;FA9C: 7E F9 98 
 
 ; CTRL+3 key pressed
-do_command_print_space CLRA                             ;FA9F: 4F 
+cmd_print_space CLRA                             ;FA9F: 4F 
         JSR     print_character          ;FAA0: BD FA 14 
         LDX     cursor_position_ptr      ;FAA3: DE 2D 
         JMP     paint_cursor             ;FAA5: 7E F3 C8 
 
 ; BEL received
-do_command_bell LDAA    #$07                     ;FAA8: 86 07          BEL - Bell, Alert
+cmd_bell LDAA    #$07                     ;FAA8: 86 07          BEL - Bell, Alert
         JSR     add_character_to_screen  ;FAAA: BD F1 E7 
         CLR     >beep_timer              ;FAAD: 7F 00 6A 
         RTS                              ;FAB0: 39 
 
 ; CTRL+4 key pressed
-do_command_indicators_off LDAA    misc_data                ;FAB1: 96 69 
+cmd_indicators_off LDAA    misc_data                ;FAB1: 96 69 
 ; turn off bits for LED5 and LED6?
         ANDA    #%11111100               ;FAB3: 84 FC 
         STAA    misc_data                ;FAB5: 97 69 
@@ -1591,12 +1608,12 @@ ZFAE5   LDAA    misc_data                ;FAE5: 96 69
         BRA     ZFADB                    ;FAE9: 20 F0 
 
 ; CTRL+5 key pressed
-do_command_flow_control_enable INC     >flow_control_mode       ;FAEB: 7C 00 78 
+cmd_flow_control_enable INC     >flow_control_mode       ;FAEB: 7C 00 78 
         LDX     cursor_position_ptr      ;FAEE: DE 2D 
         JMP     paint_cursor             ;FAF0: 7E F3 C8 
 
 ; CTRL+6 key pressed
-do_command_flow_control_disable CLR     >flow_control_mode       ;FAF3: 7F 00 78 
+cmd_flow_control_disable CLR     >flow_control_mode       ;FAF3: 7F 00 78 
         LDX     cursor_position_ptr      ;FAF6: DE 2D 
         JMP     paint_cursor             ;FAF8: 7E F3 C8 
 
@@ -1619,7 +1636,7 @@ ZFB19   CLR     >seq_processing          ;FB19: 7F 00 73
         JMP     main                     ;FB21: 7E F0 BB 
 ZFB24   CMPA    #$18                     ;FB24: 81 18          received CAN - Cancel sequence
         BEQ     ZFB19                    ;FB26: 27 F1 
-        CMPA    #$5B                     ;FB28: 81 5B          received "[" - Control Sequence Indicator
+        CMPA    #'[                      ;FB28: 81 5B          received "[" - Control Sequence Indicator
         BEQ     ZFB60                    ;FB2A: 27 34 
         LDX     #escape_sequences        ;FB2C: CE FB 81 
 ZFB2F   LDAB    ,X                       ;FB2F: E6 00 
@@ -1709,7 +1726,7 @@ cs_NEL  LDX     cursor_position_ptr      ;FBB7: DE 2D
         LDAA    ,X                       ;FBB9: A6 00 
         ANDA    #$7F                     ;FBBB: 84 7F 
         STAA    ,X                       ;FBBD: A7 00 
-        JMP     do_command_line_feed     ;FBBF: 7E FA 59 
+        JMP     cmd_line_feed            ;FBBF: 7E FA 59 
 
 ; Control Function - Cursor Up
 cs_CUU  LDAB    param1                   ;FBC2: D6 6C 
@@ -1775,7 +1792,7 @@ ZFC09   PSHB                             ;FC09: 37
 cs_CUP  LDAA    param1                   ;FC1A: 96 6C 
         BEQ     ZFC1F                    ;FC1C: 27 01 
         DECA                             ;FC1E: 4A 
-ZFC1F   CMPA    #$17                     ;FC1F: 81 17 
+ZFC1F   CMPA    #23                      ;FC1F: 81 17 
         BLE     ZFC24                    ;FC21: 2F 01 
         RTS                              ;FC23: 39 
 ZFC24   LDAB    param2                   ;FC24: D6 6D 
@@ -1805,7 +1822,7 @@ ZFC47   LDX     #tab_stop_array          ;FC47: CE 08 23
         CLRA                             ;FC4A: 4F 
 ZFC4B   STAA    ,X                       ;FC4B: A7 00 
         INX                              ;FC4D: 08 
-        CPX     tab_array_end            ;FC4E: BC FD 24 
+        CPX     tab_stop_array_10        ;FC4E: BC FD 24 
         BNE     ZFC4B                    ;FC51: 26 F8 
         RTS                              ;FC53: 39 
 ZFC54   LDAA    current_column           ;FC54: 96 45 
@@ -1818,7 +1835,7 @@ ZFC59   LDAB    ,X                       ;FC59: E6 00
 ZFC5E   CBA                              ;FC5E: 11 
         BEQ     ZFC68                    ;FC5F: 27 07 
         INX                              ;FC61: 08 
-        CPX     tab_array_end            ;FC62: BC FD 24 
+        CPX     tab_stop_array_10        ;FC62: BC FD 24 
         BNE     ZFC59                    ;FC65: 26 F2 
         RTS                              ;FC67: 39 
 ZFC68   JMP     delete_tab_stop          ;FC68: 7E F9 32 
@@ -1879,20 +1896,20 @@ ZFCB5   CMPA    #9                       ;FCB5: 81 09
         CLR     >hide_control_chars      ;FCB9: 7F 00 79 
 ZFCBC   RTS                              ;FCBC: 39 
 
-; copy line from screen to LNBUF
+; copy line from screen to line_buffer
 copy_screen_to_line_buffer LDX     #line_buffer             ;FCBD: CE 0B 30 
         STX     dest_ptr                 ;FCC0: DF 5B 
         LDX     #screen_buffer           ;FCC2: CE 00 80 
-        LDAB    #$50                     ;FCC5: C6 50 
-; copy B chars from X to DEST 
+        LDAB    #80                      ;FCC5: C6 50 
+; copy B chars from X to dest_ptr
 copy_line LDAA    ,X                       ;FCC7: A6 00 
         INX                              ;FCC9: 08 
-        STX     source_ptr               ;FCCA: DF 59 
+        STX     temp_buf_ptr             ;FCCA: DF 59 
         LDX     dest_ptr                 ;FCCC: DE 5B 
         STAA    ,X                       ;FCCE: A7 00 
         INX                              ;FCD0: 08 
         STX     dest_ptr                 ;FCD1: DF 5B 
-        LDX     source_ptr               ;FCD3: DE 59 
+        LDX     temp_buf_ptr             ;FCD3: DE 59 
         DECB                             ;FCD5: 5A 
         BNE     copy_line                ;FCD6: 26 EF 
         RTS                              ;FCD8: 39 
@@ -1906,41 +1923,43 @@ copy_line_buffer_to_screen LDX     #screen_buffer           ;FCD9: CE 00 80
 
 ; Array of command addresses used by handle_command_code (and handle_received_command_code).
 ; Command codes begin at $80 and are generated by the keyboard or a received command.
-        FDB     do_command_nop           ;FCE6: F4 7D          $80 - never used, just a placeholder
-        FDB     do_command_down          ;FCE8: F3 83          $81 - down arrow pressed
-        FDB     do_command_left          ;FCEA: F3 9A          $82 - left arrow pressed
-        FDB     do_command_right         ;FCEC: F3 6B          $83 - right arrow pressed
-        FDB     do_command_up            ;FCEE: F3 B1          $84 - up arrow pressed
-        FDB     do_command_home          ;FCF0: F3 5D          $85 - HOME pressed
-        FDB     do_command_clear         ;FCF2: F3 1E          $86 - CLR SCRN pressed
-        FDB     do_command_set_mode      ;FCF4: F5 64          $87 - SET MODE pressed
-        FDB     do_command_transmit      ;FCF6: F4 D8          $88 - PRINT XMIT pressed
-        FDB     do_command_print         ;FCF8: F9 98          $89 - SHIFT+PRINT XMIT pressed
-        FDB     do_command_print_transmit ;FCFA: FA 99          $8a - CTRL+PRINT XMIT pressed
-        FDB     do_command_nop           ;FCFC: F4 7D          $8b - SHIFT+CTRL+D pressed
-        FDB     do_command_break         ;FCFE: F4 7E          $8c - BREAK pressed
-        FDB     do_command_edit_tabs     ;FD00: F8 3B          $8d - CTRL+ESC pressed
-        FDB     do_command_return        ;FD02: F4 97          $8e - RETURN pressed
-        FDB     do_command_backspace     ;FD04: F4 B1          $8f - BACK SPACE pressed
-        FDB     do_command_carriage_return ;FD06: FA 50          $90 - CR received
-        FDB     do_command_line_feed     ;FD08: FA 59          $91 - LF received
-        FDB     do_command_horizontal_tab ;FD0A: F9 49          $92 - HT received
-        FDB     do_command_print_enable  ;FD0C: FA 6B          $93 - CTRL+1 pressed, or DC2 received
-        FDB     do_command_print_disable ;FD0E: FA 7B          $94 - CTRL+2 pressed, or DC4 received
-        FDB     do_command_bell          ;FD10: FA A8          $95 - BEL received
-        FDB     do_command_nop           ;FD12: F4 7D          $96 - CTRL+: pressed- reset handled in interrupt, so this is just a placeholder
-        FDB     do_command_print_space   ;FD14: FA 9F          $97 - CTRL+3 pressed
-        FDB     do_command_indicators_off ;FD16: FA B1          $98 - CTRL+4 pressed
-        FDB     do_command_tab           ;FD18: F9 7E          $99 - CTRL+I pressed
-        FDB     do_command_backspace2    ;FD1A: F4 C5          $9a - BS received
-        FDB     do_command_flow_control_enable ;FD1C: FA EB          $9b - CTRL+5 pressed
-        FDB     do_command_flow_control_disable ;FD1E: FA F3          $9c - CTRL+6 pressed
+cmdvecs FDB     cmd_nop                  ;FCE6: F4 7D          $80 - never used, just a placeholder
+        FDB     cmd_down                 ;FCE8: F3 83          $81 - down arrow pressed
+        FDB     cmd_left                 ;FCEA: F3 9A          $82 - left arrow pressed
+        FDB     cmd_right                ;FCEC: F3 6B          $83 - right arrow pressed
+        FDB     cmd_up                   ;FCEE: F3 B1          $84 - up arrow pressed
+        FDB     cmd_home                 ;FCF0: F3 5D          $85 - HOME pressed
+        FDB     cmd_clear                ;FCF2: F3 1E          $86 - CLR SCRN pressed
+        FDB     cmd_set_mode             ;FCF4: F5 64          $87 - SET MODE pressed
+        FDB     cmd_transmit             ;FCF6: F4 D8          $88 - PRINT XMIT pressed
+        FDB     cmd_print                ;FCF8: F9 98          $89 - SHIFT+PRINT XMIT pressed
+        FDB     cmd_print_transmit       ;FCFA: FA 99          $8a - CTRL+PRINT XMIT pressed
+        FDB     cmd_nop                  ;FCFC: F4 7D          $8b - SHIFT+CTRL+D pressed
+        FDB     cmd_break                ;FCFE: F4 7E          $8c - BREAK pressed
+        FDB     cmd_edit_tabs            ;FD00: F8 3B          $8d - CTRL+ESC pressed
+        FDB     cmd_return               ;FD02: F4 97          $8e - RETURN pressed
+        FDB     cmd_backspace            ;FD04: F4 B1          $8f - BACK SPACE pressed
+        FDB     cmd_carriage_return      ;FD06: FA 50          $90 - CR received
+        FDB     cmd_line_feed            ;FD08: FA 59          $91 - LF received
+        FDB     cmd_horizontal_tab       ;FD0A: F9 49          $92 - HT received
+        FDB     cmd_print_enable         ;FD0C: FA 6B          $93 - CTRL+1 pressed, or DC2 received
+        FDB     cmd_print_disable        ;FD0E: FA 7B          $94 - CTRL+2 pressed, or DC4 received
+        FDB     cmd_bell                 ;FD10: FA A8          $95 - BEL received
+        FDB     cmd_nop                  ;FD12: F4 7D          $96 - CTRL+: pressed- reset handled in interrupt, so this is just a placeholder
+        FDB     cmd_print_space          ;FD14: FA 9F          $97 - CTRL+3 pressed
+        FDB     cmd_indicators_off       ;FD16: FA B1          $98 - CTRL+4 pressed
+        FDB     cmd_tab                  ;FD18: F9 7E          $99 - CTRL+I pressed
+        FDB     cmd_backspace2           ;FD1A: F4 C5          $9a - BS received
+        FDB     cmd_flow_control_enable  ;FD1C: FA EB          $9b - CTRL+5 pressed
+        FDB     cmd_flow_control_disable ;FD1E: FA F3          $9c - CTRL+6 pressed
 
-key_buffer_max FDB     $0822                    ;FD20: 08 22 
-receive_buffer_max FDB     $0B2D                    ;FD22: 0B 2D 
-tab_array_end FDB     $082D                    ;FD24: 08 2D          end of tab stop array
-mem_max FDB     $0BFF                    ;FD26: 0B FF 
+; Some constant pointers
+key_buffer_34 FDB     key_buffer+34            ;FD20: 08 22 
+receive_buffer_767 FDB     receive_buffer+767       ;FD22: 0B 2D 
+tab_stop_array_10 FDB     tab_stop_array+10        ;FD24: 08 2D          end of tab stop array
+memory_end_ptr FDB     memory_end               ;FD26: 0B FF 
 
+; Some word-size constants
 receive_buffer_fill_medium FDB     $029C                    ;FD28: 02 9C          668 bytes
 receive_buffer_fill_low FDB     $01C2                    ;FD2A: 01 C2          450 bytes
 receive_buffer_fill_high FDB     $02EE                    ;FD2C: 02 EE          750 bytes
@@ -1959,21 +1978,21 @@ config_text FCC     "  V1.0 XXXX-BAUD X LE"  ;FD43: 20 20 56 31 2E 30 20 58 58 5
 ; char value;     // bits to set on ABCD pins of MM5307 chip, in reverse order
 ; }
 baud_110 FCC     " 110"                   ;FD82: 20 31 31 30 
-        FCB     $00,$07,$0C              ;FD86: 00 07 0C 
+        FCB     $00,7,%00001100          ;FD86: 00 07 0C 
 baud_150 FCC     " 150"                   ;FD89: 20 31 35 30 
-        FCB     $00,$07,$0A              ;FD8D: 00 07 0A 
+        FCB     $00,7,%00001010          ;FD8D: 00 07 0A 
 baud_300 FCC     " 300"                   ;FD90: 20 33 30 30 
-        FCB     $00,$07,$06              ;FD94: 00 07 06 
+        FCB     $00,7,%00000110          ;FD94: 00 07 06 
 baud_600 FCC     " 600"                   ;FD97: 20 36 30 30 
-        FCB     $00,$07,$0E              ;FD9B: 00 07 0E 
+        FCB     $00,7,%00001110          ;FD9B: 00 07 0E 
 baud_1200 FCC     "1200"                   ;FD9E: 31 32 30 30 
-        FCB     $00,$07,$09              ;FDA2: 00 07 09 
+        FCB     $00,7,%00001001          ;FDA2: 00 07 09 
 baud_2400 FCC     "2400"                   ;FDA5: 32 34 30 30 
-        FCB     $00,$07,$0D              ;FDA9: 00 07 0D 
+        FCB     $00,7,%00001101          ;FDA9: 00 07 0D 
 baud_4800 FCC     "4800"                   ;FDAC: 34 38 30 30 
-        FCB     $00,$07,$0B              ;FDB0: 00 07 0B 
+        FCB     $00,7,%00001011          ;FDB0: 00 07 0B 
 baud_9600 FCC     "9600"                   ;FDB3: 39 36 30 30 
-        FCB     $00,$07,$0F              ;FDB7: 00 07 0F 
+        FCB     $00,7,%00001111          ;FDB7: 00 07 0F 
 baud_max FDB     baud_9600                ;FDBA: FD B3 
 
 ; struct parity {
@@ -1982,12 +2001,11 @@ baud_max FDB     baud_9600                ;FDBA: FD B3
 ; char value;     // bits for sending to the USART
 ; }
 parity_even_7 FCC     "E"                      ;FDBC: 45             even parity, 7 bits, 16xBRF
-        FCB     $00,$11                  ;FDBD: 00 11 
-        FCC     ":"                      ;FDBF: 3A 
+        FCB     $00,17,%00111010         ;FDBD: 00 11 3A 
 parity_odd_7 FCC     "O"                      ;FDC0: 4F             odd parity, 7 bits, 16xBRF
-        FCB     $00,$11,$1A              ;FDC1: 00 11 1A 
+        FCB     $00,17,%00011010         ;FDC1: 00 11 1A 
 parity_none_8 FCC     "8"                      ;FDC4: 38             no parity, 8 bits, 16xBRF
-        FCB     $00,$11,$0E              ;FDC5: 00 11 0E 
+        FCB     $00,17,%00001110         ;FDC5: 00 11 0E 
 parity_max FDB     parity_none_8            ;FDC8: FD C4 
 
 ; struct stop_bits {
@@ -1996,10 +2014,9 @@ parity_max FDB     parity_none_8            ;FDC8: FD C4
 ; char value;     // bits for sending to the USART
 ; }
 stop_bits_1 FCC     "1"                      ;FDCA: 31             1 stop bit
-        FCB     $00,$19                  ;FDCB: 00 19 
-        FCC     "@"                      ;FDCD: 40 
+        FCB     $00,25,%01000000         ;FDCB: 00 19 40 
 stop_bits_2 FCC     "2"                      ;FDCE: 32             2 stop bits
-        FCB     $00,$19,$C0              ;FDCF: 00 19 C0 
+        FCB     $00,25,%11000000         ;FDCF: 00 19 C0 
 stop_bits_max FDB     stop_bits_2              ;FDD2: FD CE 
 
 ; struct columns {
@@ -2009,25 +2026,32 @@ stop_bits_max FDB     stop_bits_2              ;FDD2: FD CE
 ; }
 columns_40 FCC     "40"                     ;FDD4: 34 30 
         FCB     $00                      ;FDD6: 00 
-        FCC     "!'"                     ;FDD7: 21 27 
+        FCB     $21                      ;FDD7: 21             f9dasm bug? should show as 33
+        FCC     "'"                      ;FDD8: 27 
 columns_48 FCC     "48"                     ;FDD9: 34 38 
         FCB     $00                      ;FDDB: 00 
-        FCC     "!/"                     ;FDDC: 21 2F 
+        FCB     $21                      ;FDDC: 21             f9dasm bug? should show as 33
+        FCC     "/"                      ;FDDD: 2F 
 columns_56 FCC     "56"                     ;FDDE: 35 36 
         FCB     $00                      ;FDE0: 00 
-        FCC     "!7"                     ;FDE1: 21 37 
+        FCB     $21                      ;FDE1: 21             f9dasm bug? should show as 33
+        FCC     "7"                      ;FDE2: 37 
 columns_64 FCC     "64"                     ;FDE3: 36 34 
         FCB     $00                      ;FDE5: 00 
-        FCC     "!?"                     ;FDE6: 21 3F 
+        FCB     $21                      ;FDE6: 21             f9dasm bug? should show as 33
+        FCC     "?"                      ;FDE7: 3F 
 columns_69 FCC     "69"                     ;FDE8: 36 39 
         FCB     $00                      ;FDEA: 00 
-        FCC     "!D"                     ;FDEB: 21 44 
+        FCB     $21                      ;FDEB: 21             f9dasm bug? should show as 33
+        FCC     "D"                      ;FDEC: 44 
 columns_72 FCC     "72"                     ;FDED: 37 32 
         FCB     $00                      ;FDEF: 00 
-        FCC     "!G"                     ;FDF0: 21 47 
+        FCB     $21                      ;FDF0: 21             f9dasm bug? should show as 33
+        FCC     "G"                      ;FDF1: 47 
 columns_80 FCC     "80"                     ;FDF2: 38 30 
         FCB     $00                      ;FDF4: 00 
-        FCC     "!O"                     ;FDF5: 21 4F 
+        FCB     $21                      ;FDF5: 21             f9dasm bug? should show as 33
+        FCC     "O"                      ;FDF6: 4F 
 columns_max FDB     columns_80               ;FDF7: FD F2 
 
 ; struct duplexing {
@@ -2037,9 +2061,9 @@ columns_max FDB     columns_80               ;FDF7: FD F2
 ; }
 duplexing_page FCC     "PAG"                    ;FDF9: 50 41 47 
         FCB     $00                      ;FDFC: 00 
-        FCC     "."                      ;FDFD: 2E 
-        FCB     $01                      ;FDFE: 01 
-duplexing_half FCC     "HDX"                    ;FDFF: 48 44 58 
+        BGT     ZFE00                    ;FDFD: 2E 01 
+duplexing_half FCC     "H"                      ;FDFF: 48 
+ZFE00   FCC     "DX"                     ;FE00: 44 58 
         FCB     $00                      ;FE02: 00 
         FCC     "."                      ;FE03: 2E 
         FCB     $00                      ;FE04: 00 
