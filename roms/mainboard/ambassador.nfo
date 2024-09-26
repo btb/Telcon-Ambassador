@@ -966,12 +966,10 @@ label fd26 memory_end_ptr
 comment fd28
 comment fd28 Some word-size constants
 word fd28-fd2d
++dec fd28-fd2d
 label fd28 receive_buffer_fill_medium
-lcomment fd28 668 bytes
 label fd2a receive_buffer_fill_low
-lcomment fd2a 450 bytes
 label fd2c receive_buffer_fill_high
-lcomment fd2c 750 bytes
 
 comment fd2e
 label fd2e ruler_text
@@ -1058,26 +1056,26 @@ comment fdd4       char offset;    // offset into config_text
 comment fdd4       char value;     // # of columns - 1
 comment fdd4 }
 label fdd4 columns_40
-dec fdd7
-lcomment fdd7 f9dasm bug? should show as 33
+const fdd7-fdd8
++dec fdd7-fdd8
 label fdd9 columns_48
-dec fddc
-lcomment fddc f9dasm bug? should show as 33
+const fddc-fddd
++dec fddc-fddd
 label fdde columns_56
-dec fde1
-lcomment fde1 f9dasm bug? should show as 33
+const fde1-fde2
++dec fde1-fde2
 label fde3 columns_64
-dec fde6
-lcomment fde6 f9dasm bug? should show as 33
+const fde6-fde7
++dec fde6-fde7
 label fde8 columns_69
-dec fdeb
-lcomment fdeb f9dasm bug? should show as 33
+const fdeb-fdec
++dec fdeb-fdec
 label fded columns_72
-dec fdf0
-lcomment fdf0 f9dasm bug? should show as 33
+const fdf0-fdf1
++dec fdf0-fdf1
 label fdf2 columns_80
-dec fdf5
-lcomment fdf5 f9dasm bug? should show as 33
+const fdf5-fdf6
++dec fdf5-fdf6
 label fdf7 columns_max
 dvec fdf7
 
@@ -1088,9 +1086,14 @@ comment fdf9       char offset;    // offset into config_text
 comment fdf9       char value;     // 1,0,-1
 comment fdf9 }
 label fdf9 duplexing_page
-dec fdfd
+const fdfd-fdfe
++dec fdfd-fdfe
 label fdff duplexing_half
+const fe03-fe04
++dec fe03-fe04
 label fe05 duplexing_full
+const fe09-fe0a
++dec fe09-fe0a
 label fe0b duplexing_max
 dvec fe0b
 
@@ -1101,7 +1104,11 @@ comment fe0d       char offset;    // offset into config_text
 comment fe0d       char value;     // # 0 or 1
 comment fe0d }
 label fe0d tty_no
+const fe11-fe12
++dec fe11-fe12
 label fe13 tty_yes
+const fe17-fe18
++dec fe17-fe18
 label fe19 tty_max
 dvec fe19
 

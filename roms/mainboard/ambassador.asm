@@ -1960,9 +1960,9 @@ tab_stop_array_10 FDB     tab_stop_array+10        ;FD24: 08 2D          end of 
 memory_end_ptr FDB     memory_end               ;FD26: 0B FF 
 
 ; Some word-size constants
-receive_buffer_fill_medium FDB     $029C                    ;FD28: 02 9C          668 bytes
-receive_buffer_fill_low FDB     $01C2                    ;FD2A: 01 C2          450 bytes
-receive_buffer_fill_high FDB     $02EE                    ;FD2C: 02 EE          750 bytes
+receive_buffer_fill_medium FDB     668                      ;FD28: 02 9C 
+receive_buffer_fill_low FDB     450                      ;FD2A: 01 C2 
+receive_buffer_fill_high FDB     750                      ;FD2C: 02 EE 
 
 ruler_text FCC     "1----6----1----6----"   ;FD2E: 31 2D 2D 2D 2D 36 2D 2D 2D 2D 31 2D 2D 2D 2D 36 2D 2D 2D 2D 
         FCB     $00                      ;FD42: 00 
@@ -2025,33 +2025,19 @@ stop_bits_max FDB     stop_bits_2              ;FDD2: FD CE
 ; char value;     // # of columns - 1
 ; }
 columns_40 FCC     "40"                     ;FDD4: 34 30 
-        FCB     $00                      ;FDD6: 00 
-        FCB     $21                      ;FDD7: 21             f9dasm bug? should show as 33
-        FCC     "'"                      ;FDD8: 27 
+        FCB     $00,33,39                ;FDD6: 00 21 27 
 columns_48 FCC     "48"                     ;FDD9: 34 38 
-        FCB     $00                      ;FDDB: 00 
-        FCB     $21                      ;FDDC: 21             f9dasm bug? should show as 33
-        FCC     "/"                      ;FDDD: 2F 
+        FCB     $00,33,47                ;FDDB: 00 21 2F 
 columns_56 FCC     "56"                     ;FDDE: 35 36 
-        FCB     $00                      ;FDE0: 00 
-        FCB     $21                      ;FDE1: 21             f9dasm bug? should show as 33
-        FCC     "7"                      ;FDE2: 37 
+        FCB     $00,33,55                ;FDE0: 00 21 37 
 columns_64 FCC     "64"                     ;FDE3: 36 34 
-        FCB     $00                      ;FDE5: 00 
-        FCB     $21                      ;FDE6: 21             f9dasm bug? should show as 33
-        FCC     "?"                      ;FDE7: 3F 
+        FCB     $00,33,63                ;FDE5: 00 21 3F 
 columns_69 FCC     "69"                     ;FDE8: 36 39 
-        FCB     $00                      ;FDEA: 00 
-        FCB     $21                      ;FDEB: 21             f9dasm bug? should show as 33
-        FCC     "D"                      ;FDEC: 44 
+        FCB     $00,33,68                ;FDEA: 00 21 44 
 columns_72 FCC     "72"                     ;FDED: 37 32 
-        FCB     $00                      ;FDEF: 00 
-        FCB     $21                      ;FDF0: 21             f9dasm bug? should show as 33
-        FCC     "G"                      ;FDF1: 47 
+        FCB     $00,33,71                ;FDEF: 00 21 47 
 columns_80 FCC     "80"                     ;FDF2: 38 30 
-        FCB     $00                      ;FDF4: 00 
-        FCB     $21                      ;FDF5: 21             f9dasm bug? should show as 33
-        FCC     "O"                      ;FDF6: 4F 
+        FCB     $00,33,79                ;FDF4: 00 21 4F 
 columns_max FDB     columns_80               ;FDF7: FD F2 
 
 ; struct duplexing {
@@ -2060,17 +2046,11 @@ columns_max FDB     columns_80               ;FDF7: FD F2
 ; char value;     // 1,0,-1
 ; }
 duplexing_page FCC     "PAG"                    ;FDF9: 50 41 47 
-        FCB     $00                      ;FDFC: 00 
-        BGT     ZFE00                    ;FDFD: 2E 01 
-duplexing_half FCC     "H"                      ;FDFF: 48 
-ZFE00   FCC     "DX"                     ;FE00: 44 58 
-        FCB     $00                      ;FE02: 00 
-        FCC     "."                      ;FE03: 2E 
-        FCB     $00                      ;FE04: 00 
+        FCB     $00,46,1                 ;FDFC: 00 2E 01 
+duplexing_half FCC     "HDX"                    ;FDFF: 48 44 58 
+        FCB     $00,46,0                 ;FE02: 00 2E 00 
 duplexing_full FCC     "FDX"                    ;FE05: 46 44 58 
-        FCB     $00                      ;FE08: 00 
-        FCC     "."                      ;FE09: 2E 
-        FCB     $FF                      ;FE0A: FF 
+        FCB     $00,46,255               ;FE08: 00 2E FF 
 duplexing_max FDB     duplexing_full           ;FE0B: FE 05 
 
 ; struct tty {
@@ -2079,13 +2059,9 @@ duplexing_max FDB     duplexing_full           ;FE0B: FE 05
 ; char value;     // # 0 or 1
 ; }
 tty_no  FCC     "NO "                    ;FE0D: 4E 4F 20 
-        FCB     $00                      ;FE10: 00 
-        FCC     ";"                      ;FE11: 3B 
-        FCB     $00                      ;FE12: 00 
+        FCB     $00,59,0                 ;FE10: 00 3B 00 
 tty_yes FCC     "YES"                    ;FE13: 59 45 53 
-        FCB     $00                      ;FE16: 00 
-        FCC     ";"                      ;FE17: 3B 
-        FCB     $01                      ;FE18: 01 
+        FCB     $00,59,1                 ;FE16: 00 3B 01 
 tty_max FDB     tty_yes                  ;FE19: FE 13 
 
 ; escape sequences. null-terminated string.
