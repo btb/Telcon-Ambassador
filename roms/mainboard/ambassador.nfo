@@ -5,7 +5,7 @@ option noasc
 option noflex
 
 comment 0000 RAM addresses
-label 0000 null_ptr
+used 0000 memory_start
 
 label 0027 stack_top
 lcomment 0027 top of stack
@@ -205,6 +205,8 @@ lcomment B00F char: speaker, ind4, ind5, ind6 control
 comment f000 RESET handler
 comment f000 set stack pointer to $27
 comment f003 clear registers
+const f004
++dec f004
 comment f008 clear all the memory
 comment f017 disable interrupts
 comment f018 enable interrupt on low-going KBINT, enable keyboard port
@@ -464,9 +466,9 @@ lcomment f4a4 HDX
 
 comment f4b1
 comment f4b1 BACK SPACE key pressed
-comment f4c5 In page mode, just delete the character and move the cursor
-comment f4c5 In half or full duplex, also transmit BS
-comment f4c5 In full duplex, also update the cursor
+comment f4b1 In page mode, just delete the character and move the cursor
+comment f4b1 In half or full duplex, also transmit BS
+comment f4b1 In full duplex, also update the cursor
 label f4b1 cmd_backspace
 lcomment f4b4 PAG
 lcomment f4b6 BS - Backspace
@@ -483,6 +485,9 @@ comment f4d8 In half or full duplex, do nothing
 comment f4d8 In page mode, send screen text out
 label f4d8 cmd_transmit
 lcomment f4db PAG
+const f4e4
++dec f4e4
+dec f4ec
 dec f515
 
 comment f51f
@@ -497,6 +502,7 @@ comment f546
 comment f546 Find last non-blank character on screen
 label f546 screen_find_last_char
 const f561
++dec f561
 
 comment f564
 comment f564 SET MODE key pressed
@@ -729,6 +735,8 @@ comment f998
 comment f998 SHIFT+PRINT XMIT key pressed
 label f998 cmd_print
 lcomment f998 printer enabled?
+const f9b6
++dec f9b6
 dec f9be
 dec f9c9
 dec f9fd

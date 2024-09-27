@@ -7,7 +7,7 @@
 ;****************************************************
 
 ; RAM addresses
-null_ptr EQU     $0000
+memory_start EQU     $0000
 stack_top EQU     $0027                    ; top of stack
 duplexing_mode EQU     $0028                    ; char: duplexing control byte. PAG=1, HDX=0, FDX=-1
 receive_buffer_tail_ptr EQU     $0029                    ; char *: pointer to tail of receive buffer FIFO
@@ -89,7 +89,7 @@ misc_port_control EQU     $B00F                    ; char: speaker, ind4, ind5, 
 ; set stack pointer to $27
 hdlr_RST LDS     #stack_top               ;F000: 8E 00 27 
 ; clear registers
-        LDX     #null_ptr                ;F003: CE 00 00 
+        LDX     #0                       ;F003: CE 00 00 
         CLRA                             ;F006: 4F 
         CLRB                             ;F007: 5F 
 ; clear all the memory
@@ -749,6 +749,9 @@ ZF4AB   LDAA    current_row              ;F4AB: 96 44
         RTS                              ;F4B0: 39 
 
 ; BACK SPACE key pressed
+; In page mode, just delete the character and move the cursor
+; In half or full duplex, also transmit BS
+; In full duplex, also update the cursor
 cmd_backspace TST     >duplexing_mode          ;F4B1: 7D 00 28 
         BGT     cmd_backspace2           ;F4B4: 2E 0F          PAG
         LDAA    #$08                     ;F4B6: 86 08          BS - Backspace
@@ -757,9 +760,6 @@ cmd_backspace TST     >duplexing_mode          ;F4B1: 7D 00 28
         BEQ     cmd_backspace2           ;F4BE: 27 05          HDX
         LDX     cursor_position_ptr      ;F4C0: DE 2D 
         JMP     paint_cursor             ;F4C2: 7E F3 C8 
-; In page mode, just delete the character and move the cursor
-; In half or full duplex, also transmit BS
-; In full duplex, also update the cursor
 
 ; BS received
 ; Delete character and move the cursor
@@ -780,11 +780,11 @@ cmd_transmit TST     >duplexing_mode          ;F4D8: 7D 00 28
         BGT     ZF4E0                    ;F4DB: 2E 03          PAG
         JMP     ZF51E                    ;F4DD: 7E F5 1E 
 ZF4E0   JSR     screen_find_last_char    ;F4E0: BD F5 46 
-        CPX     #null_ptr                ;F4E3: 8C 00 00 
+        CPX     #0                       ;F4E3: 8C 00 00 
         BNE     ZF4E9                    ;F4E6: 26 01 
         RTS                              ;F4E8: 39 
 ZF4E9   STX     last_char_ptr            ;F4E9: DF 55 
-        LDAA    #$00                     ;F4EB: 86 00 
+        LDAA    #0                       ;F4EB: 86 00 
         STAA    row_number               ;F4ED: 97 4D 
         CLRB                             ;F4EF: 5F 
 ZF4F0   JSR     get_position             ;F4F0: BD F3 D1 
@@ -849,7 +849,7 @@ ZF54A   LDAA    ,X                       ;F54A: A6 00
         ANDA    #$7F                     ;F55A: 84 7F 
         CMPA    #$20                     ;F55C: 81 20 
         BNE     ZF563                    ;F55E: 26 03 
-        LDX     #$0000                   ;F560: CE 00 00 
+        LDX     #0                       ;F560: CE 00 00 
 ZF563   RTS                              ;F563: 39 
 
 ; SET MODE key pressed
@@ -1433,7 +1433,7 @@ ZF9A8   LDAB    printer_data_addr        ;F9A8: F6 B0 0A
         DEC     >counter                 ;F9AD: 7A 00 61 
         BNE     ZF9A4                    ;F9B0: 26 F2 
         JSR     screen_find_last_char    ;F9B2: BD F5 46 
-        CPX     #null_ptr                ;F9B5: 8C 00 00 
+        CPX     #0                       ;F9B5: 8C 00 00 
         BNE     ZF9BB                    ;F9B8: 26 01 
         RTS                              ;F9BA: 39 
 ZF9BB   STX     last_char_ptr            ;F9BB: DF 55 
